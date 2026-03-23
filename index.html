@@ -178,6 +178,7 @@
   <div class="tab" onclick="switchTab('capacidad',this)">⚙️ CARGA POR LÍNEA</div>
   <div class="tab" onclick="switchTab('pedidos',this)">📋 CARGAR PEDIDOS</div>
   <div class="tab" onclick="switchTab('clientes',this)">👥 CLIENTES</div>
+  <div class="tab" onclick="switchTab('historial',this)">📈 HISTORIAL</div>
 </div>
 
 <!-- CONTEO -->
@@ -376,6 +377,45 @@
   </div>
   <div id="clientesGrid"></div>
 </div>
+<!-- HISTORIAL -->
+<div class="panel" id="tab-historial">
+  <!-- Controles -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <input type="text" id="histSearchInput" placeholder="Buscar producto o SKU..."
+        style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none"
+        oninput="filterHistProds()">
+    </div>
+    <select id="histLineaFilter" onchange="filterHistProds()"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <option value="">Todas las líneas</option>
+    </select>
+    <select id="histDias" onchange="renderHistorial()"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;outline:none">
+      <option value="7">7 días</option>
+      <option value="15">15 días</option>
+      <option value="30" selected>30 días</option>
+      <option value="90">Todo el historial</option>
+    </select>
+    <div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden">
+      <button id="hunit-pzs" onclick="setHistUnit('pzs')"
+        style="padding:9px 14px;border:none;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:700;background:var(--accent);color:#000">PZS</button>
+      <button id="hunit-kg" onclick="setHistUnit('kg')"
+        style="padding:9px 14px;border:none;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:700;background:transparent;color:var(--muted)">KG</button>
+    </div>
+  </div>
+  <!-- Product selector -->
+  <div id="histProdList" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;max-height:140px;overflow-y:auto"></div>
+  <!-- Chart area -->
+  <div id="histChartArea" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:320px">
+    <div style="text-align:center;color:var(--muted);padding:60px;font-size:13px">
+      Selecciona un producto para ver su historial
+    </div>
+  </div>
+  <!-- Stats row -->
+  <div id="histStats" style="display:none;margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px"></div>
+</div>
+
 <!-- EDIT/ADD MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -594,6 +634,7 @@ function switchTab(t,el){
   if(t==='plan') renderPlan();
   if(t==='capacidad') renderCapacidad();
   if(t==='clientes') renderClientes();
+  if(t==='historial') renderHistorial();
 }
 
 async function exportCapacidadPDF(btn) {
@@ -868,9 +909,9 @@ function aplicarModoVista() {
   document.querySelectorAll('button, input, select').forEach(el => {
     const keep = keepIds.some(id => el.id === id);
     const isExport = el.textContent && el.textContent.includes('EXPORTAR');
-    // En clientes: ocultar botones de cambio de tipo (→ DIST / → PROD)
+    const isHistCtrl = ['histSearchInput','histLineaFilter','histDias','hunit-pzs','hunit-kg'].some(id => el.id === id);
     const isToggleTipo = el.textContent && (el.textContent.includes('→ DIST') || el.textContent.includes('→ PROD'));
-    if (!keep && !isExport) el.style.display = 'none';
+    if (!keep && !isExport && !isHistCtrl) el.style.display = 'none';
     if (isToggleTipo) el.style.display = 'none';
   });
 }
@@ -1940,6 +1981,226 @@ function exportCSV(){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
   a.download='plan_produccion_'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
+}
+
+// ======= HISTORIAL =======
+let histUnit = 'pzs';
+let histSelectedSku = null;
+let histFiltrados = [];
+
+function setHistUnit(unit) {
+  histUnit = unit;
+  document.getElementById('hunit-pzs').style.background = unit==='pzs' ? 'var(--accent)' : 'transparent';
+  document.getElementById('hunit-pzs').style.color = unit==='pzs' ? '#000' : 'var(--muted)';
+  document.getElementById('hunit-kg').style.background = unit==='kg' ? 'var(--green)' : 'transparent';
+  document.getElementById('hunit-kg').style.color = unit==='kg' ? '#000' : 'var(--muted)';
+  if (histSelectedSku) renderHistChart(histSelectedSku);
+}
+
+function filterHistProds() {
+  const q = (document.getElementById('histSearchInput').value||'').toLowerCase();
+  const l = document.getElementById('histLineaFilter').value;
+  // Only production products (have LINEA in catalog)
+  histFiltrados = CATALOG
+    .filter(p => p.LINEA && p.LINEA.trim())
+    .filter(p => (!q || p.PRODUCTO.toLowerCase().includes(q) || p.SKU.toLowerCase().includes(q)))
+    .filter(p => (!l || p.LINEA === l))
+    .slice(0, 60);
+  renderHistProdList();
+}
+
+function renderHistProdList() {
+  const el = document.getElementById('histProdList');
+  if (!histFiltrados.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px">Sin productos</div>';
+    return;
+  }
+  el.innerHTML = histFiltrados.map(p => {
+    const active = histSelectedSku === p.SKU;
+    return `<button onclick="selectHistProd('${p.SKU}')"
+      style="padding:6px 12px;border-radius:20px;border:1px solid ${active?'var(--accent)':'var(--border)'};
+      background:${active?'rgba(245,166,35,.15)':'var(--surface)'};
+      color:${active?'var(--accent)':'var(--text)'};
+      cursor:pointer;font-size:11px;font-family:var(--mono);white-space:nowrap;transition:all .15s">
+      ${p.PRODUCTO.length>35?p.PRODUCTO.slice(0,35)+'…':p.PRODUCTO}
+    </button>`;
+  }).join('');
+}
+
+function selectHistProd(sku) {
+  histSelectedSku = sku;
+  renderHistProdList();
+  renderHistChart(sku);
+}
+
+async function renderHistChart(sku) {
+  if (!db) return;
+  const dias = parseInt(document.getElementById('histDias').value) || 30;
+  const prod = CATALOG.find(p => p.SKU === sku);
+  if (!prod) return;
+  const kgPz = prod.KG_POR_PIEZA || 10;
+
+  document.getElementById('histChartArea').innerHTML =
+    `<div style="text-align:center;color:var(--muted);padding:60px;font-size:12px">⏳ Cargando historial...</div>`;
+
+  try {
+    // Load inventory history
+    const invSnap = await db.ref('kalos/historial/inventario').once('value');
+    const pedSnap = await db.ref('kalos/historial/pedidos').once('value');
+    const invData = invSnap.val() || {};
+    const pedData = pedSnap.val() || {};
+
+    // Build date range (last N days)
+    const today = new Date();
+    const dates = [];
+    for (let i = dias - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+
+    // Extract data per date
+    const invByDate = {};
+    const pedByDate = {};
+
+    Object.values(invData).forEach(entry => {
+      if (!entry.fecha || !entry.inventario) return;
+      const fecha = entry.fecha;
+      if (!invByDate[fecha]) invByDate[fecha] = null;
+      const val = entry.inventario[sku];
+      if (val !== undefined) invByDate[fecha] = val;
+    });
+
+    Object.values(pedData).forEach(entry => {
+      if (!entry.fecha || !entry.pedidos) return;
+      const fecha = entry.fecha;
+      if (!pedByDate[fecha]) pedByDate[fecha] = null;
+      const val = entry.pedidos[sku];
+      if (val !== undefined) pedByDate[fecha] = val;
+    });
+
+    const invSeries = dates.map(d => {
+      const v = invByDate[d];
+      if (v === null || v === undefined) return null;
+      return histUnit === 'kg' ? Math.round(v * kgPz) : v;
+    });
+    const pedSeries = dates.map(d => {
+      const v = pedByDate[d];
+      if (v === null || v === undefined) return null;
+      return histUnit === 'kg' ? Math.round(v * kgPz) : v;
+    });
+
+    const hasData = invSeries.some(v => v !== null) || pedSeries.some(v => v !== null);
+    if (!hasData) {
+      document.getElementById('histChartArea').innerHTML =
+        `<div style="text-align:center;color:var(--muted);padding:60px;font-size:13px">
+          📂 Sin historial registrado para este producto todavía.<br>
+          <span style="font-size:11px">El historial se construye automáticamente cada vez que cargas tu inventario y pedidos.</span>
+        </div>`;
+      return;
+    }
+
+    // Draw SVG chart
+    const w = 800, h = 260, padL = 55, padR = 20, padT = 20, padB = 40;
+    const allVals = [...invSeries, ...pedSeries].filter(v => v !== null);
+    const maxV = Math.max(...allVals, 1);
+    const minV = 0;
+    const scaleX = i => padL + (i / (dates.length - 1)) * (w - padL - padR);
+    const scaleY = v => padT + (1 - (v - minV) / (maxV - minV)) * (h - padT - padB);
+
+    const buildPath = (series, color) => {
+      const pts = series.map((v, i) => v !== null ? `${scaleX(i).toFixed(1)},${scaleY(v).toFixed(1)}` : null);
+      let d = ''; let inPath = false;
+      pts.forEach((pt, i) => {
+        if (pt) { d += (inPath ? ' L' : ' M') + pt; inPath = true; }
+        else { inPath = false; }
+      });
+      return d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : '';
+    };
+
+    const buildDots = (series, color) => series.map((v, i) =>
+      v !== null ? `<circle cx="${scaleX(i).toFixed(1)}" cy="${scaleY(v).toFixed(1)}" r="3.5" fill="${color}" stroke="var(--bg)" stroke-width="1.5">
+        <title>${dates[i]}: ${v.toLocaleString()} ${histUnit}</title></circle>` : ''
+    ).join('');
+
+    // Y axis labels
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => {
+      const val = Math.round(minV + t * (maxV - minV));
+      const y = scaleY(val);
+      return `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${val.toLocaleString()}</text>
+              <line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5"/>`;
+    }).join('');
+
+    // X axis labels (show every N days)
+    const step = Math.ceil(dates.length / 8);
+    const xLabels = dates.map((d, i) => {
+      if (i % step !== 0 && i !== dates.length - 1) return '';
+      const parts = d.split('-');
+      const label = `${parts[2]}/${parts[1]}`;
+      return `<text x="${scaleX(i).toFixed(1)}" y="${h - padB + 16}" text-anchor="middle" font-size="10" fill="var(--muted)">${label}</text>`;
+    }).join('');
+
+    const unit = histUnit === 'kg' ? 'kg' : 'pzs';
+    const svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+      <style>text{font-family:monospace}</style>
+      ${yTicks}
+      ${xLabels}
+      ${buildPath(invSeries, 'var(--accent)')}
+      ${buildPath(pedSeries, 'var(--red)')}
+      ${buildDots(invSeries, 'var(--accent)')}
+      ${buildDots(pedSeries, 'var(--red)')}
+    </svg>`;
+
+    // Stats
+    const invVals = invSeries.filter(v => v !== null);
+    const pedVals = pedSeries.filter(v => v !== null);
+    const avgInv = invVals.length ? Math.round(invVals.reduce((a,b)=>a+b,0)/invVals.length) : 0;
+    const avgPed = pedVals.length ? Math.round(pedVals.reduce((a,b)=>a+b,0)/pedVals.length) : 0;
+    const maxInv = invVals.length ? Math.max(...invVals) : 0;
+    const maxPed = pedVals.length ? Math.max(...pedVals) : 0;
+
+    document.getElementById('histChartArea').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)">${prod.PRODUCTO}</div>
+        <div style="display:flex;gap:14px;font-size:11px;font-family:var(--mono)">
+          <span style="color:var(--accent)">● Inventario</span>
+          <span style="color:var(--red)">● Pedidos pendientes</span>
+        </div>
+      </div>
+      ${svg}`;
+
+    document.getElementById('histStats').style.display = 'grid';
+    document.getElementById('histStats').innerHTML = [
+      {label:'Inv. promedio', val: avgInv.toLocaleString()+' '+unit, color:'var(--accent)'},
+      {label:'Inv. máximo', val: maxInv.toLocaleString()+' '+unit, color:'var(--accent)'},
+      {label:'Pedido promedio', val: avgPed.toLocaleString()+' '+unit, color:'var(--red)'},
+      {label:'Pedido máximo', val: maxPed.toLocaleString()+' '+unit, color:'var(--red)'},
+      {label:'Días registrados', val: invVals.length+' días', color:'var(--muted)'},
+    ].map(s => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${s.label}</div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${s.color}">${s.val}</div>
+    </div>`).join('');
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('histChartArea').innerHTML =
+      `<div style="text-align:center;color:var(--red);padding:60px">Error cargando historial: ${e.message}</div>`;
+  }
+}
+
+function renderHistorial() {
+  // Populate linea filter if empty
+  const sel = document.getElementById('histLineaFilter');
+  if (sel.options.length <= 1) {
+    const lineas = [...new Set(CATALOG.map(p=>p.LINEA).filter(Boolean))].sort();
+    lineas.forEach(l => {
+      const o = document.createElement('option');
+      o.value = l; o.textContent = l;
+      sel.appendChild(o);
+    });
+  }
+  filterHistProds();
+  if (histSelectedSku) renderHistChart(histSelectedSku);
 }
 
 // ======= ASISTENTE IA =======
