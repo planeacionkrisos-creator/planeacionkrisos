@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan de Producción — KALOS</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1117;--surface:#181c26;--surface2:#1f2535;--border:#2a3045;--accent:#f5a623;--red:#ff4444;--orange:#ff8c00;--yellow:#e6c200;--green:#00d68f;--blue:#4da6ff;--text:#e8eaf0;--muted:#6b7599;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .logo{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--accent);letter-spacing:2px;}
+  .logo span{color:var(--muted);font-weight:400;}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .date-badge{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:4px;border:1px solid var(--border);}
+  .week-badge{font-family:var(--mono);font-size:11px;color:var(--green);background:rgba(0,214,143,.08);padding:4px 10px;border-radius:4px;border:1px solid rgba(0,214,143,.2);}
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 24px;gap:4px;}
+  .tab{font-family:var(--mono);font-size:12px;padding:12px 18px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;letter-spacing:1px;font-weight:600;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .panel{display:none;padding:20px 24px;}
+  .panel.active{display:block;}
+  .search-bar{display:flex;gap:10px;margin-bottom:16px;}
+  .search-bar input,.search-bar select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;}
+  .search-bar input{flex:1;}
+  .search-bar input:focus,.search-bar select:focus{border-color:var(--accent);}
+  .product-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:9px;max-height:62vh;overflow-y:auto;padding-right:4px;}
+  .product-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s;}
+  .product-card:hover{border-color:var(--accent);}
+  .prod-info{flex:1;min-width:0;}
+  .prod-name{font-size:12px;font-weight:500;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prod-sku{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;}
+  .linea-tag{font-size:10px;color:var(--muted);background:var(--bg);padding:2px 6px;border-radius:3px;display:inline-block;margin-top:3px;}
+  .qty-control{display:flex;align-items:center;gap:5px;}
+  .qty-btn{width:27px;height:27px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:var(--mono);font-weight:700;}
+  .qty-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .qty-input{width:56px;background:var(--bg);border:1px solid var(--border);color:var(--text);text-align:center;padding:5px;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:600;outline:none;}
+  .qty-input:focus{border-color:var(--accent);}
+  .qty-input.filled{border-color:var(--green);color:var(--green);}
+  .save-bar{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .btn{padding:9px 18px;border-radius:6px;border:none;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:hover{background:#ffc04d;}
+  .btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+  .btn-outline:hover{background:rgba(245,166,35,.1);}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);}
+  .btn-danger:hover{background:rgba(255,68,68,.1);}
+  .count-info{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .view-toggle{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;width:fit-content;}
+  .vt-btn{padding:7px 16px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;color:var(--muted);background:transparent;border:none;transition:all .2s;}
+  .vt-btn.active{background:var(--accent);color:#000;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px 16px;}
+  .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+  .stat-val{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .stat-val.red{color:var(--red);}
+  .stat-val.orange{color:var(--orange);}
+  .stat-val.yellow{color:var(--yellow);}
+  .stat-val.green{color:var(--green);}
+  .plan-controls{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;}
+  .plan-controls select,.plan-controls input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;}
+  .plan-table-wrap{overflow:auto;border-radius:8px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .1s;}
+  tbody tr:hover{background:rgba(31,37,53,.7);}
+  tbody td{padding:8px 12px;white-space:nowrap;}
+  td.product-cell{white-space:normal;min-width:200px;max-width:260px;font-size:12px;}
+  td.mono{font-family:var(--mono);font-size:11px;}
+  .urgency-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;}
+  .u-critical{background:var(--red);box-shadow:0 0 6px var(--red);}
+  .u-high{background:var(--orange);}
+  .u-medium{background:var(--yellow);}
+  .u-low{background:var(--green);}
+  .u-ok{background:var(--muted);}
+  .pill{display:inline-block;padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;font-weight:600;}
+  .pill-red{background:rgba(255,68,68,.15);color:var(--red);}
+  .pill-orange{background:rgba(255,140,0,.15);color:var(--orange);}
+  .pill-yellow{background:rgba(230,194,0,.12);color:var(--yellow);}
+  .pill-green{background:rgba(0,214,143,.12);color:var(--green);}
+  .pill-gray{background:rgba(107,117,153,.15);color:var(--muted);}
+  .bar-wrap{width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;}
+  .bar-fill{height:100%;border-radius:3px;}
+  /* WEEKLY */
+  .week-grid{display:grid;gap:10px;}
+  .week-day-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .week-day-card.today-card{border-color:var(--accent);border-width:2px;}
+  .day-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+  .day-left{display:flex;flex-direction:column;gap:3px;}
+  .day-title{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:1px;display:flex;align-items:center;gap:8px;}
+  .day-date{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .day-right{display:flex;align-items:center;gap:8px;}
+  .today-label{background:rgba(245,166,35,.2);color:var(--accent);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;}
+  .day-content{padding:0;}
+  .day-content.collapsed{display:none;}
+  .day-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .day-table th{padding:7px 12px;background:var(--bg);font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:left;border-bottom:1px solid var(--border);}
+  .day-table td{padding:7px 12px;border-bottom:1px solid rgba(42,48,69,.4);}
+  .day-table tr:last-child td{border-bottom:none;}
+  .day-table tr:hover td{background:rgba(255,255,255,.02);}
+  .monday .day-header{border-left:3px solid #4da6ff;}
+  .tuesday .day-header{border-left:3px solid #9d6fff;}
+  .wednesday .day-header{border-left:3px solid #00d68f;}
+  .thursday .day-header{border-left:3px solid var(--orange);}
+  .friday .day-header{border-left:3px solid var(--red);}
+  .saturday .day-header{border-left:3px solid var(--accent);}
+  /* CAPACITY CARDS */
+  .cap-grid{display:grid;grid-template-columns:1fr;gap:14px;padding-bottom:20px;}
+  .cap-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .cap-card-header{padding:14px 18px 10px;border-bottom:1px solid var(--border);}
+  .cap-linea{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:2px;}
+  .cap-notas{font-size:11px;color:var(--muted);line-height:1.4;}
+  .cap-body{padding:14px 18px;}
+  .cap-stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .cap-stat-label{font-size:11px;color:var(--muted);}
+  .cap-stat-val{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .cap-bar-label{font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);}
+  .cap-bar-wrap{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:12px;}
+  .cap-bar-fill{height:100%;border-radius:4px;transition:width .4s;}
+  .cap-prods{margin-top:10px;border-top:1px solid var(--border);padding-top:10px;}
+  .cap-prod-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(42,48,69,.3);}
+  .cap-prod-row:last-child{border-bottom:none;}
+  .cap-prod-name{color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px;}
+  .cap-prod-dias{font-family:var(--mono);font-size:10px;white-space:nowrap;}
+  .cap-unknown{padding:14px 18px;font-size:12px;color:var(--muted);font-style:italic;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:480px;max-width:95vw;position:relative;}
+  .modal-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:20px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .modal-field{display:flex;flex-direction:column;gap:5px;}
+  .modal-field.full{grid-column:1/-1;}
+  .modal-field label{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .modal-field input,.modal-field select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;}
+  .modal-field input:focus,.modal-field select:focus{border-color:var(--accent);}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--border);}
+  .modal-delete{margin-right:auto;}
+  .btn-sm{padding:7px 14px;font-size:10px;}
+  /* edit icon on cards */
+  .edit-btn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;flex-shrink:0;}
+  .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .custom-tag{font-size:9px;background:rgba(245,166,35,.15);color:var(--accent);padding:1px 5px;border-radius:3px;margin-left:4px;font-family:var(--mono);}
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(245,166,35,.04);}
+  .upload-icon{font-size:32px;margin-bottom:8px;}
+  .upload-text{font-size:13px;color:var(--muted);}
+  .upload-text strong{color:var(--accent);}
+  #fileInput{display:none;}
+  .pedidos-summary{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.7;}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 16px;font-family:var(--mono);font-size:11px;color:var(--text);z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.success{border-color:var(--green);color:var(--green);}
+  .toast.warn{border-color:var(--orange);color:var(--orange);}
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">KALOS<span>/PROD</span></div>
+  <div class="header-right">
+    <div id="fbStatus" style="font-family:var(--mono);font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px">
+      <span id="fbDot" style="width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block"></span>
+      <span id="fbTxt">conectando...</span>
+    </div>
+    <div id="lastUpdateBadge" style="display:none;font-family:var(--mono);font-size:9px;color:var(--muted);background:rgba(255,255,255,.05);padding:3px 8px;border-radius:10px;border:1px solid var(--border)">
+      🕐 <span id="lastUpdateTxt"></span>
+    </div>
+    <div class="week-badge" id="weekBadge"></div>
+    <div class="date-badge" id="dateBadge"></div>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('conteo',this)">📦 CONTEO</div>
+  <div class="tab" onclick="switchTab('plan',this)">📊 PLAN DE PRODUCCIÓN</div>
+  <div class="tab" onclick="switchTab('capacidad',this)">⚙️ CARGA POR LÍNEA</div>
+  <div class="tab" onclick="switchTab('pedidos',this)">📋 CARGAR PEDIDOS</div>
+  <div class="tab" onclick="switchTab('clientes',this)">👥 CLIENTES</div>
+</div>
+
+<!-- CONTEO -->
+<div class="panel active" id="tab-conteo">
+
+  <!-- Mode toggle -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="view-toggle">
+      <button class="vt-btn active" id="cm-lista" onclick="setConteoMode('lista')">📋 LISTA</button>
+      <button class="vt-btn" id="cm-ubicacion" onclick="setConteoMode('ubicacion')">📍 POR UBICACIÓN</button>
+    </div>
+    <span class="count-info" id="countInfo">0 productos contados</span>
+  </div>
+
+  <!-- MODO LISTA -->
+  <div id="conteo-lista">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Buscar producto o SKU..." oninput="filterProds()">
+      <select id="lineaFilter" onchange="filterProds()"><option value="">Todas las líneas</option></select>
+    </div>
+    <div class="product-list" id="productList"></div>
+  </div>
+
+  <!-- MODO UBICACIÓN -->
+  <div id="conteo-ubicacion" style="display:none">
+    <!-- Selector de ubicación -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase">📍 Ubicación actual</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono)">PASILLO</div>
+          <select id="pasilloSel" style="background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:8px 12px;border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:700;outline:none;min-width:140px">
+            <option value="PASILLO 1">PASILLO 1</option>
+            <option value="PASILLO 2">PASILLO 2</option>
+            <option value="PASILLO 3">PASILLO 3</option>
+            <option value="PASILLO 4">PASILLO 4</option>
+            <option value="PASILLO 5">PASILLO 5</option>
+            <option value="PASILLO 6">PASILLO 6</option>
+            <option value="PASILLO 7">PASILLO 7</option>
+            <option value="PASILLO 8">PASILLO 8</option>
+            <option value="PASILLO 9">PASILLO 9</option>
+            <option value="PASILLO 10">PASILLO 10</option>
+            <option value="RACK EXTRAS">RACK EXTRAS</option>
+            <option value="PRODUCCIÓN">PRODUCCIÓN</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono)">NIVEL</div>
+          <select id="nivelSel" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:var(--mono);font-size:13px;outline:none">
+            <option value="1">NIVEL 1</option>
+            <option value="2">NIVEL 2</option>
+            <option value="3">NIVEL 3</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Búsqueda rápida + captura -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase">📦 Capturar cantidad</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <input type="text" id="ubicSearchInput" placeholder="Buscar producto o SKU..." oninput="filterUbicProds()"
+          style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:6px;font-family:var(--sans);font-size:13px;outline:none">
+        <select id="ubicLineaFilter" onchange="filterUbicProds()"
+          style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:6px;font-family:var(--sans);font-size:13px;outline:none">
+          <option value="">Todas las líneas</option>
+        </select>
+      </div>
+      <!-- Product selector -->
+      <div id="ubicProductList" style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px"></div>
+      <!-- Selected product + qty input -->
+      <div id="ubicSelected" style="display:none;background:var(--bg);border:1px solid var(--accent);border-radius:7px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Producto seleccionado:</div>
+        <div id="ubicSelName" style="font-size:13px;font-weight:600;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="ubicQtyInput" min="1" placeholder="Cantidad pzs..." autofocus
+            style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-family:var(--mono);font-size:16px;font-weight:700;outline:none;text-align:center"
+            onkeydown="if(event.key==='Enter')registrarCaptura()">
+          <button class="btn btn-primary" onclick="registrarCaptura()" style="padding:10px 20px;font-size:13px">+ SUMAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de capturas -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text)">📋 HISTORIAL DE CAPTURAS</span>
+        <button class="btn btn-danger" style="padding:5px 12px;font-size:10px" onclick="clearLog()">🗑 LIMPIAR LOG</button>
+      </div>
+      <div id="capturaLog" style="max-height:300px;overflow-y:auto">
+        <div style="padding:16px;font-size:12px;color:var(--muted);text-align:center">Sin capturas aún — selecciona un producto y registra</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save bar (shared) -->
+  <div class="save-bar" style="margin-top:14px">
+    <button class="btn btn-primary" onclick="saveConteo()">💾 GUARDAR CONTEO</button>
+    <button class="btn btn-outline" onclick="goToPlan()">📊 VER PLAN →</button>
+    <button class="btn btn-outline" onclick="openModal(null)" style="color:var(--green);border-color:var(--green)">＋ NUEVO PRODUCTO</button>
+    <button class="btn btn-outline" onclick="document.getElementById('importInvFile').click()" style="color:var(--blue);border-color:var(--blue)">📥 IMPORTAR INVENTARIO</button>
+    <input type="file" id="importInvFile" accept=".xlsx,.xlsm,.csv" style="display:none" onchange="importInventario(this)">
+    <button class="btn btn-danger" onclick="clearConteo()">🗑 LIMPIAR TODO</button>
+  </div>
+</div>
+
+<!-- PLAN -->
+<div class="panel" id="tab-plan">
+  <div class="stats-row" id="statsRow"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+    <div class="view-toggle">
+      <button class="vt-btn active" id="vt-lista" onclick="setView('lista')">≡ LISTA</button>
+      <button class="vt-btn" id="vt-semanal" onclick="setView('semanal')">📅 SEMANAL</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select id="planFilter" onchange="renderPlan()">
+        <option value="all">Todos</option>
+        <option value="critical">🔴 Críticos</option>
+        <option value="urgent">🟠 Urgentes (≤3d)</option>
+        <option value="produce">Requieren producción</option>
+      </select>
+      <select id="lineaFilterPlan" onchange="renderPlan()"><option value="">Todas las líneas</option></select>
+      <input type="text" id="searchPlan" placeholder="Buscar..." oninput="renderPlan()" style="min-width:140px">
+      <select id="sortPlan" onchange="renderPlan()" style="min-width:160px">
+        <option value="urgencia">↕ Urgencia</option>
+        <option value="pendiente_desc">↓ Mayor pendiente</option>
+        <option value="pendiente_asc">↑ Menor pendiente</option>
+        <option value="inv_asc">↓ Menor inventario</option>
+        <option value="dias_asc">↓ Menos días cobertura</option>
+      </select>
+      <button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button>
+    </div>
+  </div>
+  <div id="view-lista">
+    <div class="plan-table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Urgencia</th><th>Línea</th><th>Producto</th><th>SKU</th>
+          <th>Inv. Actual</th><th>Pendiente</th><th>Inv. Neto</th><th>Mín</th>
+          <th>Días Cob.</th><th>Req/Día</th><th>Req Semanal</th><th>A Producir (pzs)</th><th>A Producir (kg)</th>
+        </tr></thead>
+        <tbody id="planBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="view-semanal" style="display:none">
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+</div>
+
+<!-- CARGA POR LÍNEA -->
+<div class="panel" id="tab-capacidad">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn btn-outline" onclick="exportCapacidadPDF(this)" style="color:var(--orange);border-color:var(--orange);display:flex;align-items:center;gap:6px">
+      📄 EXPORTAR PDF
+    </button>
+  </div>
+  <div id="capacidadGrid"></div>
+</div>
+
+<!-- PEDIDOS -->
+<div class="panel" id="tab-pedidos">
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+       ondragover="ev(event,'drag')" ondragleave="ev(event,'')" ondrop="dropFile(event)">
+    <div class="upload-icon">📂</div>
+    <div class="upload-text">Arrastra tu CSV de pedidos aquí<br>o <strong>haz click para seleccionar</strong></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:var(--mono);">Pedidos__XX_.csv — columnas: Codigo, Pendiente</div>
+  </div>
+  <input type="file" id="fileInput" accept=".csv" onchange="loadCSV(event)">
+  <div id="pedidosResult"></div>
+</div>
+
+<!-- CLIENTES -->
+<div class="panel" id="tab-clientes">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <input type="text" id="clienteSearch" placeholder="Buscar cliente..." oninput="renderClientes()"
+      style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+    <select id="clienteSort" onchange="renderClientes()"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <option value="kg_desc">↓ Mayor KG pendiente</option>
+      <option value="pzs_desc">↓ Mayor piezas pendientes</option>
+      <option value="pedidos_desc">↓ Más pedidos activos</option>
+      <option value="fecha_asc">↑ Pedido más antiguo primero</option>
+      <option value="nombre_asc">A-Z Nombre</option>
+    </select>
+    <select id="clienteVendedor" onchange="renderClientes()"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <option value="">Todos los vendedores</option>
+    </select>
+    <select id="clienteTipo" onchange="renderClientes()"
+      style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <option value="todos" selected>Todos los productos</option>
+      <option value="produccion">🏭 Solo producción propia</option>
+      <option value="distribucion">📦 Solo distribución</option>
+    </select>
+  </div>
+  <div id="clientesGrid"></div>
+</div>
+<!-- EDIT/ADD MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">NUEVO PRODUCTO</div>
+    <div class="modal-grid">
+      <div class="modal-field full">
+        <label>Nombre del Producto</label>
+        <input type="text" id="mProd" placeholder="Ej. CACAHUATE SALADO 10KG">
+      </div>
+      <div class="modal-field">
+        <label>SKU</label>
+        <input type="text" id="mSku" placeholder="Ej. PCSVB10K">
+      </div>
+      <div class="modal-field">
+        <label>Línea</label>
+        <select id="mLinea"></select>
+      </div>
+      <div class="modal-field">
+        <label>Inventario Mínimo (pzs)</label>
+        <input type="number" id="mMin" min="0" value="0">
+      </div>
+      <div class="modal-field">
+        <label>Inventario Máximo (pzs)</label>
+        <input type="number" id="mMax" min="0" value="0">
+      </div>
+      <div class="modal-field">
+        <label>Req. Diario (pzs)</label>
+        <input type="number" id="mReq" min="0" step="0.5" value="0">
+      </div>
+      <div class="modal-field">
+        <label>Inventario Actual (pzs)</label>
+        <input type="number" id="mInv" min="0" value="0">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm modal-delete" id="modalDeleteBtn" onclick="deleteProduct()" style="display:none">🗑 ELIMINAR</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">CANCELAR</button>
+      <button class="btn btn-primary btn-sm" onclick="saveProduct()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script>
+const CATALOG=[{"LINEA":"SALADO","PRODUCTO":"CACAHUATE SALADO/VIRGINIA/ESPAÑOL 10KG","INV_MIN_PZS":2000.0,"INV_MAX":2200,"REQ_DIARIO":440.0,"INV_ACTUAL":0.0,"SKU":"PCSVB10K","TOTAL_PENDIENTE":453.0,"REQ_SEMANAL":2200.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-453.0,"DIAS_DISPONIBLES":-1.0295454545454545},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE JUMBO SALADO 10KG","INV_MIN_PZS":300.0,"INV_MAX":330,"REQ_DIARIO":66.0,"INV_ACTUAL":807.0,"SKU":"PCJSB10K","TOTAL_PENDIENTE":150.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":657.0,"DIAS_DISPONIBLES":9.954545454545453},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE SUPER CANTINERO 10KG","INV_MIN_PZS":400.0,"INV_MAX":440,"REQ_DIARIO":88.0,"INV_ACTUAL":216.0,"SKU":"PCSCB10K","TOTAL_PENDIENTE":162.0,"REQ_SEMANAL":224.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":54.0,"DIAS_DISPONIBLES":0.6136363636363636},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE CANTINERO 10KG","INV_MIN_PZS":200.0,"INV_MAX":220,"REQ_DIARIO":44.0,"INV_ACTUAL":11.0,"SKU":"PCCAB10K","TOTAL_PENDIENTE":60.0,"REQ_SEMANAL":209.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-49.0,"DIAS_DISPONIBLES":-1.1136363636363635},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE ENTERO FRITO 40KG","INV_MIN_PZS":75.0,"INV_MAX":83,"REQ_DIARIO":16.5,"INV_ACTUAL":0.0,"SKU":"PCEFB40K","TOTAL_PENDIENTE":25.0,"REQ_SEMANAL":82.5,"KG_POR_PIEZA":40.0,"INV_NETO_MAESTRO":-25.0,"DIAS_DISPONIBLES":-1.515151515151515},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE SALADO C/AJO 10KG","INV_MIN_PZS":50.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":21.0,"SKU":"PCSAB10K","TOTAL_PENDIENTE":50.0,"REQ_SEMANAL":34.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-29.0,"DIAS_DISPONIBLES":-2.6363636363636362},{"LINEA":"CASCARA","PRODUCTO":"CACAHUATE C/CASCARA TOSTADO AMERICANO 20KG","INV_MIN_PZS":0.0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":187.0,"SKU":"PCCTB20K","TOTAL_PENDIENTE":281.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":20.0,"INV_NETO_MAESTRO":-94.0,"DIAS_DISPONIBLES":-0.17090909090909087},{"LINEA":"CASCARA","PRODUCTO":"CACAHUATE C/CASCARA TOSTADO AMERICANO 10KG","INV_MIN_PZS":2500.0,"INV_MAX":2750,"REQ_DIARIO":550.0,"INV_ACTUAL":169.0,"SKU":"PCCTB10K","TOTAL_PENDIENTE":202.0,"REQ_SEMANAL":2581.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-33.0,"DIAS_DISPONIBLES":-0.05999999999999999},{"LINEA":"CASCARA","PRODUCTO":"CACAHUATE C/CASCARA TOSTADO AMERICANO 5KG","INV_MIN_PZS":2500.0,"INV_MAX":2750,"REQ_DIARIO":550.0,"INV_ACTUAL":569.0,"SKU":"PCCTB05K","TOTAL_PENDIENTE":101.0,"REQ_SEMANAL":2181.0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":468.0,"DIAS_DISPONIBLES":0.8509090909090907},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS SELECCIONADAS 10KG","INV_MIN_PZS":5000.0,"INV_MAX":5500,"REQ_DIARIO":1100.0,"INV_ACTUAL":840.0,"SKU":"PMHSB10K","TOTAL_PENDIENTE":3583.0,"REQ_SEMANAL":4660.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-2743.0,"DIAS_DISPONIBLES":-2.493636363636363},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS SELECCIONADAS 25KG","INV_MIN_PZS":200.0,"INV_MAX":220,"REQ_DIARIO":44.0,"INV_ACTUAL":0.0,"SKU":"PMHSB25K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0.0},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS SELECCIONADAS 40KG","INV_MIN_PZS":0.0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0.0,"SKU":"PMHSB40K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":40.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS SELECCIONADAS 50KG","INV_MIN_PZS":0.0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0.0,"SKU":"PMHSB50K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":50.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 10KG","INV_MIN_PZS":2000.0,"INV_MAX":2200,"REQ_DIARIO":440.0,"INV_ACTUAL":1991.0,"SKU":"PCMNB10K","TOTAL_PENDIENTE":588.0,"REQ_SEMANAL":209.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":1403.0,"DIAS_DISPONIBLES":3.1886363636363635},{"LINEA":"MITADES","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 40KG","INV_MIN_PZS":0.0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0.0,"SKU":"PCMNB40K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":40.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"JAPONES NATURAL","PRODUCTO":"CACAHUATE JAPONES NATURAL 10KG","INV_MIN_PZS":1500.0,"INV_MAX":1650,"REQ_DIARIO":330.0,"INV_ACTUAL":275.0,"SKU":"PCJNB10K","TOTAL_PENDIENTE":271.0,"REQ_SEMANAL":1375.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":4.0,"DIAS_DISPONIBLES":0.012121212121212121},{"LINEA":"JAPONES FRITO","PRODUCTO":"CACAHUATE JAPONES RED FIRE 10KG","INV_MIN_PZS":2000.0,"INV_MAX":2200,"REQ_DIARIO":440.0,"INV_ACTUAL":740.0,"SKU":"PCJRB10K","TOTAL_PENDIENTE":519.0,"REQ_SEMANAL":1460.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":221.0,"DIAS_DISPONIBLES":0.5022727272727273},{"LINEA":"JAPONES FRITO","PRODUCTO":"CACAHUATE JAPONES QUESO JALAPEÑO 10KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":412.0,"SKU":"PCJQB10K","TOTAL_PENDIENTE":265.0,"REQ_SEMANAL":138.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":147.0,"DIAS_DISPONIBLES":1.3363636363636364},{"LINEA":"JAPONES FRITO","PRODUCTO":"CACAHUATE JAPONES HABANERO 10KG","INV_MIN_PZS":200.0,"INV_MAX":220,"REQ_DIARIO":44.0,"INV_ACTUAL":0.0,"SKU":"PCJHB10K","TOTAL_PENDIENTE":36.0,"REQ_SEMANAL":220.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-36.0,"DIAS_DISPONIBLES":-0.8181818181818182},{"LINEA":"JAPONES FRITO","PRODUCTO":"CACAHUATE JAPONES BLUE FIRE 10KG","INV_MIN_PZS":100.0,"INV_MAX":110,"REQ_DIARIO":22.0,"INV_ACTUAL":157.0,"SKU":"PJBFB10K","TOTAL_PENDIENTE":80.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":77.0,"DIAS_DISPONIBLES":3.5},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS® TOYCHIDITOS® RED FIRE 4KG","INV_MIN_PZS":2500.0,"INV_MAX":2750,"REQ_DIARIO":550.0,"INV_ACTUAL":389.0,"SKU":"PKTRB04K","TOTAL_PENDIENTE":1560.0,"REQ_SEMANAL":2361.0,"KG_POR_PIEZA":4.0,"INV_NETO_MAESTRO":-1171.0,"DIAS_DISPONIBLES":-2.129090909090909},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS® TOYCHIDITOS® QUESO 4KG","INV_MIN_PZS":2500.0,"INV_MAX":2750,"REQ_DIARIO":550.0,"INV_ACTUAL":0.0,"SKU":"PKTQB04K","TOTAL_PENDIENTE":1701.0,"REQ_SEMANAL":2750.0,"KG_POR_PIEZA":4.0,"INV_NETO_MAESTRO":-1701.0,"DIAS_DISPONIBLES":-3.0927272727272728},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS® TOYCHIDITOS® BLUE FIRE 4KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":0.0,"SKU":"PKTBB04K","TOTAL_PENDIENTE":76.0,"REQ_SEMANAL":550.0,"KG_POR_PIEZA":4.0,"INV_NETO_MAESTRO":-76.0,"DIAS_DISPONIBLES":-0.6909090909090909},{"LINEA":"GARAPIÑADO","PRODUCTO":"CACAHUATE GARAPIÑADO NATURAL 10KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":96.0,"SKU":"PCGNB10K","TOTAL_PENDIENTE":428.0,"REQ_SEMANAL":454.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-332.0,"DIAS_DISPONIBLES":-3.018181818181818},{"LINEA":"GARAPIÑADO","PRODUCTO":"CACAHUATE GARAPIÑADO ROJO 10KG","INV_MIN_PZS":200.0,"INV_MAX":220,"REQ_DIARIO":44.0,"INV_ACTUAL":0.0,"SKU":"PCGRB10K","TOTAL_PENDIENTE":22.0,"REQ_SEMANAL":220.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-22.0,"DIAS_DISPONIBLES":-0.5},{"LINEA":"GARAPIÑADO","PRODUCTO":"CACAHUATE GARAPIÑADO C/AJONJOLI 10KG","INV_MIN_PZS":200.0,"INV_MAX":220,"REQ_DIARIO":44.0,"INV_ACTUAL":1.0,"SKU":"PCGAB10K","TOTAL_PENDIENTE":36.0,"REQ_SEMANAL":219.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-35.0,"DIAS_DISPONIBLES":-0.7954545454545454},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITO CUBO 10KG","INV_MIN_PZS":700.0,"INV_MAX":770,"REQ_DIARIO":154.0,"INV_ACTUAL":105.0,"SKU":"PKTCB10K","TOTAL_PENDIENTE":118.0,"REQ_SEMANAL":665.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-13.0,"DIAS_DISPONIBLES":-0.0844155844155844},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITOS 10KG","INV_MIN_PZS":75.0,"INV_MAX":83,"REQ_DIARIO":16.5,"INV_ACTUAL":105.0,"SKU":"PCKTB10K","TOTAL_PENDIENTE":11.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":94.0,"DIAS_DISPONIBLES":5.6969696969696955},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 10KG","INV_MIN_PZS":75.0,"INV_MAX":83,"REQ_DIARIO":16.5,"INV_ACTUAL":51.0,"SKU":"PCKFB10K","TOTAL_PENDIENTE":8.0,"REQ_SEMANAL":31.5,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":43.0,"DIAS_DISPONIBLES":2.6060606060606055},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/PEPITA 10KG","INV_MIN_PZS":50.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":14.0,"SKU":"PCKPB10K","TOTAL_PENDIENTE":7.0,"REQ_SEMANAL":41.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":7.0,"DIAS_DISPONIBLES":0.6363636363636364},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE MITADES SALADAS 10KG","INV_MIN_PZS":50.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":33.0,"SKU":"PCMSB10K","TOTAL_PENDIENTE":20.0,"REQ_SEMANAL":22.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":13.0,"DIAS_DISPONIBLES":1.1818181818181819},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE MITADES ENCHILADAS 10KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":626.0,"SKU":"PCMEB10K","TOTAL_PENDIENTE":95.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":531.0,"DIAS_DISPONIBLES":4.827272727272727},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PEPITA VERDE SALADA NACIONAL 10KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSB10K","TOTAL_PENDIENTE":22.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-22.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"KONCHUDITAS® 10KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":53.0,"SKU":"PKONB10K","TOTAL_PENDIENTE":89.0,"REQ_SEMANAL":497.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-36.0,"DIAS_DISPONIBLES":-0.32727272727272727},{"LINEA":"FRITO","PRODUCTO":"KONCHUDITAS® RED FIRE 10KG","INV_MIN_PZS":50.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":0.0,"SKU":"PKENB10K","TOTAL_PENDIENTE":41.0,"REQ_SEMANAL":55.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-41.0,"DIAS_DISPONIBLES":-3.727272727272727},{"LINEA":"FRITO","PRODUCTO":"TAKITOS® RED FIRE 5 KG","INV_MIN_PZS":100.0,"INV_MAX":110,"REQ_DIARIO":22.0,"INV_ACTUAL":0.0,"SKU":"PTARB05K","TOTAL_PENDIENTE":496.0,"REQ_SEMANAL":110.0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":-496.0,"DIAS_DISPONIBLES":-22.545454545454547},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS® AJONJOLI 10KG","INV_MIN_PZS":300.0,"INV_MAX":330,"REQ_DIARIO":66.0,"INV_ACTUAL":66.0,"SKU":"PCAJB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":264.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":66.0,"DIAS_DISPONIBLES":0.9999999999999998},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS® AMARILLO 10KG","INV_MIN_PZS":100.0,"INV_MAX":110,"REQ_DIARIO":22.0,"INV_ACTUAL":35.0,"SKU":"PCAMB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":75.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":35.0,"DIAS_DISPONIBLES":1.5909090909090908},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS® ROJO 10KG","INV_MIN_PZS":100.0,"INV_MAX":110,"REQ_DIARIO":22.0,"INV_ACTUAL":34.0,"SKU":"PCROB10K","TOTAL_PENDIENTE":19.0,"REQ_SEMANAL":76.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":15.0,"DIAS_DISPONIBLES":0.6818181818181818},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON® AJONJOLI 10KG","INV_MIN_PZS":100.0,"INV_MAX":110,"REQ_DIARIO":22.0,"INV_ACTUAL":96.0,"SKU":"PCHAB10K","TOTAL_PENDIENTE":25.0,"REQ_SEMANAL":14.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":71.0,"DIAS_DISPONIBLES":3.227272727272727},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON® RED FIRE 10KG","INV_MIN_PZS":50.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":0.0,"SKU":"PCHRB10K","TOTAL_PENDIENTE":64.0,"REQ_SEMANAL":55.0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-64.0,"DIAS_DISPONIBLES":-5.818181818181818},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON AMARILLO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAHB10K","TOTAL_PENDIENTE":2.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-2.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO CRANKY 4KG","INV_MIN_PZS":100.0,"INV_MAX":28,"REQ_DIARIO":5.5,"INV_ACTUAL":492.0,"SKU":"PCCKB04K","TOTAL_PENDIENTE":102.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4.0,"INV_NETO_MAESTRO":390.0,"DIAS_DISPONIBLES":70.90909090909089},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO TIRA AHUMADA 2 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCTHB02K","TOTAL_PENDIENTE":12.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":2,"INV_NETO_MAESTRO":-12.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO 2KG","INV_MIN_PZS":100.0,"INV_MAX":55,"REQ_DIARIO":11.0,"INV_ACTUAL":0.0,"SKU":"PCCIB02K","TOTAL_PENDIENTE":49.0,"REQ_SEMANAL":55.0,"KG_POR_PIEZA":2.0,"INV_NETO_MAESTRO":-49.0,"DIAS_DISPONIBLES":0.8166666666666667},{"LINEA":"GARAPIÑADO","PRODUCTO":"ALMENDRA GARAPIÑADA 10 KG","INV_MIN_PZS":500.0,"INV_MAX":550,"REQ_DIARIO":110.0,"INV_ACTUAL":0.0,"SKU":"PAGAB10K","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":550.0,"KG_POR_PIEZA":40.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0.009009009009009009},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"ALMENDRA HORNEADA 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PAHOB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE CANTINERO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE CANTINERO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE CANTINERO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCAC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"SALADO","PRODUCTO":"CACAHUATE CANTINERO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCAB05K","TOTAL_PENDIENTE":20.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-20.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE ENTERO ENCHILADO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEEC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE ENTERO ENCHILADO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEEC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE ENTERO ENCHILADO 10 KG (Cod:PCEEB10K)","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEEB10K","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE ENTERO ENCHILADO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEEC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE ENTERO ENCHILADO C/AJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCERC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE ENTERO ENCHILADO C/AJO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEAB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/AJONJOLI 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/AJONJOLI 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/AJONJOLI 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGAC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/COCO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGCC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/COCO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGCC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"GARAPIÑADO","PRODUCTO":"CACAHUATE GARAPIÑADO C/COCO 10 KG (Cod:PCGCB10K)","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGCB10K","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO C/COCO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGCC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO NATURAL 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGNC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO NATURAL 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGNC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO NATURAL 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGNC450","TOTAL_PENDIENTE":4.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-4.0,"DIAS_DISPONIBLES":0},{"LINEA":"GARAPIÑADO","PRODUCTO":"CACAHUATE GARAPIÑADO NATURAL 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGNB05K","TOTAL_PENDIENTE":45.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-45.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO ROJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGRC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO ROJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGRC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE GARAPIÑADO ROJO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCGRC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE HORNEADO #1 50 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCH1B50K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":50,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES BLUE FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PJBFC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES BLUE FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PJBFC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES BLUE FIRE 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PJBFC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES ENCHILADO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJEB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES HABANERO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJHC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES HABANERO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJHC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES HABANERO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJHC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NACHO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PJNAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NACHO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PJNAB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NATURAL 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJNC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NATURAL 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJNC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NATURAL 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJNC450","TOTAL_PENDIENTE":3.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-3.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES NATURAL 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJNB05K","TOTAL_PENDIENTE":30.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-30.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES QUESO JALAPEÑO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJQC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES QUESO JALAPEÑO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJQC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES QUESO JALAPEÑO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJQC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES QUESO JALAPEÑO 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJQB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES RED FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJRC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJRC900","TOTAL_PENDIENTE":10.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-10.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE JAPONES RED FIRE 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCJRC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKFC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKFC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKFC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKFC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/FRITURA 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKFB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/PEPITA 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKPC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/PEPITA 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKPC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATL KONTOCHO C/PEPITA 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKPC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITO CUBO 10 X 800 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTCC800","TOTAL_PENDIENTE":5.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":8.0,"INV_NETO_MAESTRO":-5.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITO CUBO 20 X 400 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTCC400","TOTAL_PENDIENTE":2.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":8.0,"INV_NETO_MAESTRO":-2.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITO CUBO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTCB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITO CUBO ESPECIAL 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKCEB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITOS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKTC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITOS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKTC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE KONTOCHO C/TRICITOS 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKTC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"CACAHUATE KONTOCHO ESPECIAL C/TRICITO Y PEPITA 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKEB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MARTAJADO HOT 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMHC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES BLANQUEADAS HORNEADAS 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMBB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES ENCHILADAS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMEC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES ENCHILADAS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMEC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES ENCHILADAS 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMEC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES ENCHILADAS 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMEB05K","TOTAL_PENDIENTE":35.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-35.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMNC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMNC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMNC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 50 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMNB50K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":50,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES HORNEADAS NATURALES 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMNB05K","TOTAL_PENDIENTE":25.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-25.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMSC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMSC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMSC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMSB05K","TOTAL_PENDIENTE":25.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-25.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS C/ACIDO CITRICO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMACB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE MITADES SALADAS CON CHILE CAMBRAY 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCMCB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO C/ACIDO CITRICO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCACB10K","TOTAL_PENDIENTE":30.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-30.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO C/AJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO C/AJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO C/AJO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSAC450","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO C/AJO 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSAB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO/VIRGINIA/ESPAÑOL 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSVC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO/VIRGINIA/ESPAÑOL 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSVC900","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO/VIRGINIA/ESPAÑOL 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSVC450","TOTAL_PENDIENTE":4.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-4.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SALADO/VIRGINIA/ESPAÑOL 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSVB05K","TOTAL_PENDIENTE":130.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-130.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SUPER CANTINERO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSCC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SUPER CANTINERO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSCC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SUPER CANTINERO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSCC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CACAHUATE SUPER CANTINERO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCSCB05K","TOTAL_PENDIENTE":90.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":-90.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE VIRGINIA TOSTADO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCVTB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE VIRGINIA TOSTADO XL 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PVXLB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHICHARRON DE CERDO 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCIC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO CRANKY 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCCKB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO CRANKY ENCHILADO 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":3.0,"SKU":"PCKEB04K","TOTAL_PENDIENTE":3.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO CRANKY ENCHILADO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCKEB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO ENCHILADO 2 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCIEBO2K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":2,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHICHARRON DE CERDO TIRA AHUMADA ENCHILADA 2 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCTEB02K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":2,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AJONJOLI 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AJONJOLI 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AJONJOLI 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHAC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AMARILLO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAHC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AMARILLO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAHC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON AMARILLO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAHC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON AMARILLO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PHARB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON BLUE FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHBC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON BLUE FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHBC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON BLUE FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHBB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON BLUE FIRE 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHBC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON MIX AMARILLO Y ROJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHMC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON MIX AMARILLO Y ROJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHMC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON MIX AMARILLO Y ROJO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHMB10K","TOTAL_PENDIENTE":9.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-9.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON MIX AMARILLO Y ROJO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHMC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON MIX AMARILLO Y ROJO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRFB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON RASPY 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PRASB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON RED FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHRC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHRC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON RED FIRE 12 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHRC12P","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":12.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON RED FIRE 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCHRC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON ROJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRHC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON ROJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRHC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKON ROJO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRHB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKON ROJO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRHC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AJONJOLI 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAJC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AJONJOLI 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAJC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AJONJOLI 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAJC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS AJONJOLI RASPY 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PRAAB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS AJONJOLI RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PAJRB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AJONJOLI RED FIRE 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAJR500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AMARILLO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAMC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AMARILLO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAMC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS AMARILLO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAMC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS AMARILLO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCAEB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCARC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":1.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCARC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCARB10K","TOTAL_PENDIENTE":7.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-7.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCARC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PARRC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS MIX AMARILLO Y ROJO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PARRB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS ROJO 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCROC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS ROJO 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCROC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"CHURRIKOS ROJO 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCROC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS ROJO C/AJONJOLI 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCRAJB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"CHURRIKOS ROJO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCREB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"DIENTE DE AJO FRITO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":8.0,"SKU":"PDAFB05K","TOTAL_PENDIENTE":6.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":2.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKONC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKONC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKONC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS RED FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKENC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKENC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONCHUDITAS RED FIRE 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKENC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKCKC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKCKC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":60.0,"SKU":"PKCKB10K","TOTAL_PENDIENTE":16.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":44.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKCKC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKRFC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KONTOCHO CHURRIKOS Y KONCHUDITAS RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKRFB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRICHITOS TOYCHIDITOS BLUE FIRE 5 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTBC05P","TOTAL_PENDIENTE":120.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4.5,"INV_NETO_MAESTRO":-120.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS TOYCHIDITOS BLUE FIRE 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTBB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS TOYCHIDITOS PIZZA 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTPB04K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRICHITOS TOYCHIDITOS PIZZA 5 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTPC05P","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4.5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS TOYCHIDITOS PIZZA 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTPB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRICHITOS TOYCHIDITOS QUESO 5 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTQC05P","TOTAL_PENDIENTE":76.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4.5,"INV_NETO_MAESTRO":-76.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS TOYCHIDITOS QUESO 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTQB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRICHITOS TOYCHIDITOS RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTRP900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRICHITOS TOYCHIDITOS RED FIRE 5 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTRC05P","TOTAL_PENDIENTE":77.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4.5,"INV_NETO_MAESTRO":-77.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"KRICHITOS TOYCHIDITOS RED FIRE 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTRB900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.9,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISPAPAS ADOBADAS 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKADC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS ADOBADAS 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKADB04K","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS ADOBADAS 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKADB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISPAPAS JALAPEÑO 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKJAC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS JALAPEÑO 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKJAB500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS JALAPEÑO 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":2.0,"SKU":"PKJAB04K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":2.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS JALAPEÑO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKJAB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISPAPAS NATURALES 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKNAC500","TOTAL_PENDIENTE":5.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":-5.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS NATURALES 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":48.0,"SKU":"PKNAB04K","TOTAL_PENDIENTE":44.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":4.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS NATURALES 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKNAB500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS NATURALES 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKNAB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISPAPAS ONDULADAS QUESO 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKOQC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS ONDULADAS QUESO 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKOQB500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS ONDULADAS QUESO 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKOQB04K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS ONDULADAS QUESO 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKOQB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISPAPAS RED FIRE 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKPRC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS RED FIRE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKPRB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"MAZAPAN 10 X 28 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMAZP10P","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.28,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"MAZAPAN 28 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMAZU28G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.028,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"MAZAPAN 30 X 10 PZAS","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMAZC30T","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.84,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"MAZAPAN AMARANTO 28 G","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMAMU28G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.028,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"MAZAPAN ARANDANO 28 G","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMARU28G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.028,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"MAZAPAN CHISPAS CHOCOLATE 28 G","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PMCCU28G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.028,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"NUEZ GARAPIÑADA 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PNGAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"NUEZ GARAPIÑADA 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PNGAC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"NUEZ GARAPIÑADA 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PNGAB10K","TOTAL_PENDIENTE":1.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"NUEZ NATURAL 9 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PNNAC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PALANQUETA MIXTA 100 X 90 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPMIC100","TOTAL_PENDIENTE":7.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-7.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PALANQUETA MIXTA 90 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPMIU90G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.09,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PALANQUETA ORIGINAL 100 X 90 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPORC100","TOTAL_PENDIENTE":7.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":-7.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PALANQUETA ORIGINAL 90 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPORU90G","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.09,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"GARAPIÑADO","PRODUCTO":"PEPITA VERDE GARAPIÑADA 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVGB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PEPITA VERDE SALADA 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PEPITA VERDE SALADA 20 X 250 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSC250","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PEPITA VERDE SALADA 20 X 450 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSC450","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"PEPITA VERDE SALADA 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PEPITA VERDE SALADA C/ACIDO CITRICO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVAB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PEPITA VERDE SALADA IMPORTADA 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVIB10K","TOTAL_PENDIENTE":20.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-20.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PEPITA VERDE SALADA IMPORTADA C/AC CITRICO 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPIAB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"PEPITA VERDE SALADA NACIONAL 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PPVSB10K","TOTAL_PENDIENTE":22.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":-22.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"SEMILLA DE CALABAZA TOSTADA ZACATECAS 25 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PSCZB25K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"SEMILLA DE CALABAZA TOSTADA 25 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":6.0,"SKU":"PSCTB25K","TOTAL_PENDIENTE":8.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25,"INV_NETO_MAESTRO":-2.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"SEMILLA DE CALABAZA TOSTADA SALADA IMPORTADA SNOW WHITE 13 MM 25 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":129.0,"SKU":"PSTSB25K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25,"INV_NETO_MAESTRO":129.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"SEMILLA DE CALABAZA TOSTADA SALADA IMPORTADA TURCA 10 MM 25 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":153.0,"SKU":"PSTTB25K","TOTAL_PENDIENTE":40.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25,"INV_NETO_MAESTRO":113.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"SEMILLA DE CALABAZA TOSTADA LADY NAILS 25 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PSTLBZSK","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":25,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TAMARINDO TRICITOS 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTTRC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TOTOPO CON AJO Y CAMBRAY 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTACB04K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TOTOPO ENCHILADO 4 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":7.0,"SKU":"PTENB04K","TOTAL_PENDIENTE":8.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":4,"INV_NETO_MAESTRO":-1.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TOTOPO ENCHILADO 6 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTENB06K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":6,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TRIKOS 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRIC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TRIKOS 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRIC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TRIKOS 20 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRIC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TRIKOS RED FIRE 10 X 1 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRFC01K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"TRIKOS RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRFC900","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":9.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TRIKOS RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTRFB10K","TOTAL_PENDIENTE":71.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":-71.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TAKITOS RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTARB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TAKITOS BLUE FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTABB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TAKITOS BLUE FIRE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":175.0,"SKU":"PTABB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":175.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE ENTERO BLANQUEADO 40 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEBB40K","TOTAL_PENDIENTE":70.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":40,"INV_NETO_MAESTRO":-70.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE ENTERO BLANQUEADO 50 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEBB50K","TOTAL_PENDIENTE":20.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":50,"INV_NETO_MAESTRO":-20.0,"DIAS_DISPONIBLES":0},{"LINEA":"NUECES Y SEMILLAS","PRODUCTO":"CACAHUATE ENTERO BLANQUEADO 1 TON","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PCEBB01T","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":1000,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TOTOPO RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PTTFB10K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"RUEDA RED FIRE 10 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PRREBI0K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":10,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"KRISTACHO QUESO 5 KG ","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKQUB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"KRISTACHO RED FIRE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKTFB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"KRISTOCHO RED FIRE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKRFB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"KRISTOCHO SALSA VERDE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PRSVB05K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISTACHOS QUESO JALAPEÑO 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKQJC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EMPACADOS","PRODUCTO":"KRISTACHOS RED FIRE 10 X 500 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PKQRC500","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":5.0,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"ARANDANO ENCHILADO 12 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PAENC12K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":12,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"BODOKITAS QUESO CHEDDAR 2 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PBQCB02K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":2,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"BODOKITAS QUESO CHEDDAR 380 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PBQCU380","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.38,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"BODOKITAS QUESO CHEDDAR CAJA C/20 PZAS 380 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PBQCC380","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.38,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"BODOKITAS RED FIRE 2 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":0.0,"SKU":"PBRFB02K","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":2,"INV_NETO_MAESTRO":0.0,"DIAS_DISPONIBLES":0},{"LINEA":"EXTRUIDO","PRODUCTO":"BODOKITAS RED FIRE 380 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0,"INV_ACTUAL":138.0,"SKU":"PBRFU380","TOTAL_PENDIENTE":0.0,"REQ_SEMANAL":0,"KG_POR_PIEZA":0.38,"INV_NETO_MAESTRO":138.0,"DIAS_DISPONIBLES":0},{"LINEA":"FRITO","PRODUCTO":"TAKITOS® BLUE FIRE 5 KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0,"SKU":"PTBFB05K","TOTAL_PENDIENTE":58,"REQ_SEMANAL":0.0,"KG_POR_PIEZA":5},{"LINEA":"EMPACADOS","PRODUCTO":"TAKITOS® RED FIRE 10 X 900 GR","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0,"SKU":"PTRFC10C","TOTAL_PENDIENTE":2,"REQ_SEMANAL":0.0,"KG_POR_PIEZA":9.0},{"LINEA":"ESPECIALIDADES","PRODUCTO":"KRISPAPAS® RED FIRE 4KG","INV_MIN_PZS":0,"INV_MAX":0,"REQ_DIARIO":0.0,"INV_ACTUAL":0,"SKU":"PKPRB04K","TOTAL_PENDIENTE":3,"REQ_SEMANAL":0.0,"KG_POR_PIEZA":4},{"LINEA":"FRITO","PRODUCTO":"TRIKOS® 10KG","SKU":"PTRIB10K","INV_MIN_PZS":250,"INV_MAX":275,"REQ_DIARIO":55.0,"REQ_SEMANAL":330.0,"INV_ACTUAL":0,"TOTAL_PENDIENTE":0,"KG_POR_PIEZA":10.0,"DIAS_DISPONIBLES":0}];
+
+// ======= CAPACIDADES DE PRODUCCIÓN POR LÍNEA (kg/día) =======
+const CAPACIDADES = {
+  'SALADO':          { kg_dia: 8500,  kg_dia_max: 8500,  notas: '1 turno' },
+  'CASCARA':         { kg_dia: 4500,  kg_dia_max: 13000, notas: 'Horno pequeño 4,500 kg/día  O  Horno Krisos grande 13,000 kg/día — nunca simultáneos' },
+  'MITADES':         { kg_dia: 21000, kg_dia_max: 40000, notas: 'Horno X-Ray 21 ton  O  Horno grande 40 ton — alternados, 1 turno' },
+  'JAPONES FRITO':   { kg_dia: 9500,  kg_dia_max: 9500,  notas: '1 turno' },
+  'JAPONES NATURAL': { kg_dia: 10000, kg_dia_max: 10000, notas: '1 turno' },
+  'EXTRUIDO':        { kg_dia: 3500,  kg_dia_max: 3500,  notas: '3,500 kg por turno' },
+  'GARAPIÑADO':      { kg_dia: 1500,  kg_dia_max: 1500,  notas: '1 turno' },
+  'FRITO':           { kg_dia: 2400,  kg_dia_max: 2400,  notas: '1 turno' },
+  'ESPECIALIDADES':  { kg_dia: 2000,  kg_dia_max: 2000,  notas: '1 turno' },
+  'EMPACADOS':       { kg_dia: null,  kg_dia_max: null,  notas: 'Capacidad desconocida' },
+  'NUECES Y SEMILLAS':{ kg_dia: null, kg_dia_max: null,  notas: 'Usa horno 40 ton, capacidad con semillas pendiente' },
+};
+
+// ======= FIREBASE =======
+const firebaseConfig = {
+  apiKey: "AIzaSyAEG3L_etLDZsuEWg6lOjX03Nq4qJgC1wo",
+  authDomain: "kalos-produccion-f03a2.firebaseapp.com",
+  databaseURL: "https://kalos-produccion-f03a2-default-rtdb.firebaseio.com",
+  projectId: "kalos-produccion-f03a2",
+  storageBucket: "kalos-produccion-f03a2.firebasestorage.app",
+  messagingSenderId: "616927646666",
+  appId: "1:616927646666:web:0c61fe8ab720cc383a7533"
+};
+let db = null;
+function initFirebase() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } catch(e) { console.warn('Firebase init error:', e); }
+}
+
+function mostrarUltimaActualizacion(ts) {
+  if (!ts) return;
+  const d = new Date(ts);
+  const fecha = d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+  const hora  = d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const el = document.getElementById('lastUpdateBadge');
+  if (el) {
+    el.style.display = '';
+    document.getElementById('lastUpdateTxt').textContent = `Actualizado: ${fecha} ${hora}`;
+  }
+}
+
+let fbGuardando = false;
+function guardarHistorial(tipo, datos) {
+  if (!db || MODO_VISTA) return;
+  try {
+    const now    = new Date();
+    const fecha  = now.toISOString().slice(0,10); // YYYY-MM-DD
+    const hora   = now.toTimeString().slice(0,5).replace(':',''); // HHMM
+    const key    = `${fecha}_${hora}`;
+    db.ref(`kalos/historial/${tipo}/${key}`).set({
+      ...datos,
+      fecha,
+      hora: now.toTimeString().slice(0,5),
+      ts: Date.now()
+    });
+    console.log(`✓ Historial ${tipo} guardado: ${key}`);
+  } catch(e) { console.warn('Error guardando historial:', e); }
+}
+
+function guardarEstado() {
+  if (MODO_VISTA || !db) return;
+  try {
+    db.ref('kalos/estado').set({
+      inventory:      inventory,
+      pendingOrders:  pendingOrders,
+      customProducts: customProducts,
+      capturaLog:     capturaLog.slice(0, 200),
+      deletedSkus:    window.deletedSkus || [],
+      clientesData:   clientesData.slice(0, 2000),
+      distribucionSkus: distribucionSkus,
+      updatedAt:      Date.now()
+    });
+  } catch(e) { console.warn('Firebase error:', e); }
+}
+
+function cargarEstado() {
+  if (!db) return;
+  db.ref('kalos/estado').once('value').then(snap => {
+    const data = snap.val();
+    if (!data) return;
+    if (data.inventory)      inventory           = data.inventory;
+    if (data.pendingOrders)  pendingOrders        = data.pendingOrders;
+    if (data.customProducts) customProducts       = data.customProducts;
+    if (data.capturaLog)     capturaLog           = data.capturaLog;
+    if (data.deletedSkus)    window.deletedSkus   = data.deletedSkus;
+    if (data.clientesData)    clientesData         = data.clientesData;
+    if (data.distribucionSkus) distribucionSkus    = data.distribucionSkus;
+    mostrarUltimaActualizacion(data.updatedAt);
+    renderProductList();
+    filterUbicProds();
+    updateCountInfo();
+    if (capturaLog.length) renderCapturaLog();
+  });
+
+  db.ref('kalos/estado').on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+    inventory           = data.inventory      || {};
+    pendingOrders       = data.pendingOrders  || {};
+    customProducts      = data.customProducts || [];
+    capturaLog          = data.capturaLog     || [];
+    window.deletedSkus  = data.deletedSkus    || [];
+    clientesData        = data.clientesData   || [];
+    distribucionSkus    = data.distribucionSkus || [];
+    mostrarUltimaActualizacion(data.updatedAt);
+    renderProductList();
+    filterUbicProds();
+    updateCountInfo();
+    if (currentView === 'plan') renderPlan();
+    if (currentView === 'capacidad') renderCapacidad();
+  });
+}
+
+let inventory={}, pendingOrders={}, currentView='lista';
+
+function urg(p){
+  if(p.REQ_DIARIO<=0) return p.INV_NETO<0?'critical':'ok';
+  const d=p.DIAS_COBERTURA;
+  if(d<0) return 'critical';
+  if(d<1) return 'high';
+  if(d<3) return 'medium';
+  if(d<7) return 'low';
+  return 'ok';
+}
+const uOrder={critical:0,high:1,medium:2,low:3,ok:4};
+const uMeta={
+  critical:{label:'CRÍTICO',cls:'pill-red',dot:'u-critical',color:'var(--red)'},
+  high:{label:'ALTO',cls:'pill-orange',dot:'u-high',color:'var(--orange)'},
+  medium:{label:'MEDIO',cls:'pill-yellow',dot:'u-medium',color:'var(--yellow)'},
+  low:{label:'BAJO',cls:'pill-green',dot:'u-low',color:'var(--green)'},
+  ok:{label:'OK',cls:'pill-gray',dot:'u-ok',color:'var(--muted)'}
+};
+function fmt(n){if(n===null||n===undefined)return'—';return Number(n).toLocaleString('es-MX',{maximumFractionDigits:0});}
+function eff(p){
+  const inv  = inventory[p.SKU]!==undefined ? inventory[p.SKU] : p.INV_ACTUAL;
+  const pend = pendingOrders[p.SKU]!==undefined ? pendingOrders[p.SKU] : p.TOTAL_PENDIENTE;
+  const neto = inv - pend;
+  // Col P: INV considerando pedidos — usar del maestro si no hay conteo/pedido cargado
+  const userHasData = inventory[p.SKU]!==undefined || pendingOrders[p.SKU]!==undefined;
+  const dias = userHasData
+    ? (p.REQ_DIARIO > 0 ? neto / p.REQ_DIARIO : 999)
+    : (p.DIAS_DISPONIBLES !== undefined && p.DIAS_DISPONIBLES !== 0 ? p.DIAS_DISPONIBLES
+       : (p.REQ_DIARIO > 0 ? neto / p.REQ_DIARIO : 999));
+  const kgPorPieza = p.KG_POR_PIEZA || 10;
+  const deficitVsMin    = Math.max(0, p.INV_MIN_PZS - neto);
+  const pedidosSinCubrir = Math.max(0, pend - inv);
+  const aProducir = Math.max(deficitVsMin, pedidosSinCubrir);
+  const pzsPendientesNetos = Math.max(0, pend - inv);
+  return {...p, INV_ACTUAL:inv, TOTAL_PENDIENTE:pend, INV_NETO:neto, DIAS_COBERTURA:dias,
+    A_PRODUCIR: aProducir,
+    A_PRODUCIR_KG: Math.round(aProducir * kgPorPieza),
+    KG_PENDIENTE_NETO: Math.round(pzsPendientesNetos * kgPorPieza),
+    KG_POR_PIEZA: kgPorPieza};
+}
+
+function switchTab(t,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(el) el.classList.add('active');
+  if(t==='plan') renderPlan();
+  if(t==='capacidad') renderCapacidad();
+  if(t==='clientes') renderClientes();
+}
+
+async function exportCapacidadPDF(btn) {
+  btn.textContent = '⏳ Generando PDF...';
+  btn.disabled = true;
+
+  try {
+    const {jsPDF} = window.jspdf;
+    const el = document.getElementById('capacidadGrid');
+
+    // Capture the grid as image
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#0d0f1a',  // match --bg color
+      scale: 2,                     // 2x resolution for crisp text
+      useCORS: true,
+      logging: false,
+      windowWidth: el.scrollWidth,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const imgW = canvas.width;
+    const imgH = canvas.height;
+
+    // A4 page: 210 x 297 mm, jsPDF uses mm
+    const pageW = 297;   // landscape A4 width
+    const pageH = 210;   // landscape A4 height
+    const margin = 10;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2 - 12; // 12mm for header
+
+    // Scale image to fit usable width
+    const ratio = imgW / imgH;
+    const printW = usableW;
+    const printH = printW / ratio;
+
+    const pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    const hora  = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+    let yOffset = margin;
+
+    // Header
+    pdf.setFillColor(13, 15, 26);
+    pdf.rect(0, 0, pageW, 14, 'F');
+    pdf.setTextColor(245, 166, 35);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica','bold');
+    pdf.text('KALOS / CARGA POR LÍNEA', margin, 9);
+    pdf.setTextColor(150, 150, 180);
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica','normal');
+    pdf.text(`Generado: ${fecha} · ${hora}`, pageW - margin, 9, {align:'right'});
+    yOffset = 16;
+
+    // If content fits in one page
+    if (printH <= usableH) {
+      pdf.addImage(imgData, 'PNG', margin, yOffset, printW, printH);
+    } else {
+      // Multi-page: slice canvas into page-height chunks
+      const pageImgH = Math.floor(imgW * usableH / usableW);
+      let srcY = 0;
+      let page = 0;
+
+      while (srcY < imgH) {
+        if (page > 0) {
+          pdf.addPage();
+          // Header on subsequent pages
+          pdf.setFillColor(13, 15, 26);
+          pdf.rect(0, 0, pageW, 14, 'F');
+          pdf.setTextColor(245, 166, 35);
+          pdf.setFontSize(11);
+          pdf.setFont('helvetica','bold');
+          pdf.text('KALOS / CARGA POR LÍNEA', margin, 9);
+          pdf.setTextColor(150, 150, 180);
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica','normal');
+          pdf.text(`Página ${page+1} · ${fecha}`, pageW - margin, 9, {align:'right'});
+          yOffset = 16;
+        }
+
+        const sliceH = Math.min(pageImgH, imgH - srcY);
+
+        // Create a slice canvas
+        const slice = document.createElement('canvas');
+        slice.width = imgW;
+        slice.height = sliceH;
+        const ctx = slice.getContext('2d');
+        ctx.drawImage(canvas, 0, srcY, imgW, sliceH, 0, 0, imgW, sliceH);
+
+        const sliceData = slice.toDataURL('image/png');
+        const slicePrintH = sliceH * usableW / imgW;
+        pdf.addImage(sliceData, 'PNG', margin, yOffset, usableW, slicePrintH);
+
+        srcY += sliceH;
+        page++;
+      }
+    }
+
+    const nowStr = now.toISOString().slice(0,10);
+    pdf.save(`KALOS_Carga_Linea_${nowStr}.pdf`);
+
+  } catch(err) {
+    console.error(err);
+    toast('Error al generar PDF: ' + err.message, 'warn');
+  } finally {
+    btn.textContent = '📄 EXPORTAR PDF';
+    btn.disabled = false;
+  }
+}
+
+function renderCapacidad(){
+  const all = getAllProducts().map(eff);
+  const lineas = [...new Set(all.map(p=>p.LINEA).filter(Boolean))].sort();
+
+  const cards = lineas.map(linea => {
+    const cap = CAPACIDADES[linea];
+    const prods = all.filter(p=>p.LINEA===linea && (p.A_PRODUCIR>0 || p.TOTAL_PENDIENTE>0 || p.INV_NETO<0));
+    const prodsSorted = prods.sort((a,b)=>{
+      // Sort: deficit first, then by pending volume
+      const defA = Math.max(0, a.TOTAL_PENDIENTE - a.INV_ACTUAL);
+      const defB = Math.max(0, b.TOTAL_PENDIENTE - b.INV_ACTUAL);
+      if(defB !== defA) return defB - defA;
+      return b.TOTAL_PENDIENTE - a.TOTAL_PENDIENTE;
+    });
+
+    // Total KG needed to fill all products to max
+    const totalKgNeeded = prods.reduce((sum,p)=> sum + (p.A_PRODUCIR_KG||0), 0);
+    // KG pendientes de entregar no cubiertos por inventario actual
+    const totalKgPendienteNeto = prods.reduce((sum,p)=> sum + (p.KG_PENDIENTE_NETO||0), 0);
+
+    // Color for linea
+    const lineaColors = {
+      'SALADO':'#4da6ff','CASCARA':'#9d6fff','MITADES':'#00d68f',
+      'JAPONES FRITO':'#ff8c00','EXTRUIDO':'#f5a623','GARAPIÑADO':'#e6c200',
+      'FRITO':'#ff4444','ESPECIALIDADES':'#4da6ff','EMPACADOS':'#6b7599',
+      'NUECES Y SEMILLAS':'#00d68f'
+    };
+    const color = lineaColors[linea] || 'var(--accent)';
+
+    if (!cap || cap.kg_dia === null) {
+      const pendTotal = prods.reduce((s,p)=>s+p.TOTAL_PENDIENTE,0);
+      return `<div class="cap-card">
+        <div class="cap-card-header">
+          <div class="cap-linea" style="color:${color}">${linea}</div>
+          <div class="cap-notas">${cap ? cap.notas : 'Sin capacidad definida'}</div>
+        </div>
+        <div class="cap-unknown">⚠ Capacidad no definida — ${prods.length} productos con producción pendiente · ${fmt(pendTotal)} pzs totales pendientes</div>
+      </div>`;
+    }
+
+    const diasMin = cap.kg_dia > 0 ? totalKgNeeded / cap.kg_dia : 0;
+    const diasMax = cap.kg_dia_max > 0 ? totalKgNeeded / cap.kg_dia_max : diasMin;
+    const pct = Math.min(100, (diasMin / 6) * 100); // vs semana de 6 días
+    const barColor = pct > 100 ? 'var(--red)' : pct > 75 ? 'var(--orange)' : pct > 40 ? 'var(--yellow)' : 'var(--green)';
+
+    const hasDual = cap.kg_dia !== cap.kg_dia_max;
+    const diasLabel = hasDual
+      ? `${diasMax.toFixed(1)} – ${diasMin.toFixed(1)} días`
+      : `${diasMin.toFixed(1)} días`;
+
+    const prodRows = prodsSorted.map(p=>{
+      const u = urg(p);
+      const dotColor = {critical:'var(--red)',high:'var(--orange)',medium:'var(--yellow)',low:'var(--green)',ok:'var(--muted)'}[u];
+      const kgPend = p.KG_PENDIENTE_NETO||0;
+      const invKg = Math.round(p.INV_ACTUAL * (p.KG_POR_PIEZA||10));
+      const pendKg = Math.round(p.TOTAL_PENDIENTE * (p.KG_POR_PIEZA||10));
+      return `<tr>
+        <td style="padding:6px 8px">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:5px;vertical-align:middle"></span>
+          <span style="font-size:11px;white-space:normal;line-height:1.3">${p.PRODUCTO}</span>
+        </td>
+        <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap">${fmt(p.INV_ACTUAL)} pzs</td>
+        <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);white-space:nowrap">${fmt(invKg)} kg</td>
+        <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:${p.TOTAL_PENDIENTE>0?'var(--orange)':'var(--muted)'};white-space:nowrap">${p.TOTAL_PENDIENTE>0?fmt(p.TOTAL_PENDIENTE)+' pzs':'—'}</td>
+        <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:${p.TOTAL_PENDIENTE>0?'var(--orange)':'var(--muted)'};white-space:nowrap">${pendKg>0?fmt(pendKg)+' kg':'—'}</td>
+        <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;font-weight:700;color:${kgPend>0?'var(--red)':'var(--green)'};white-space:nowrap">${kgPend>0?fmt(kgPend)+' kg':'✓'}</td>
+      </tr>`;
+    }).join('');
+
+    const prodTable = prodsSorted.length > 0 ? `
+      <div class="cap-prods" style="padding:0;overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead>
+            <tr style="background:var(--bg)">
+              <th style="padding:5px 8px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Producto</th>
+              <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Inv Pzs</th>
+              <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Inv Kg</th>
+              <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--orange);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Pedido Pzs</th>
+              <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--orange);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Pedido Kg</th>
+              <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--red);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Déficit Kg</th>
+            </tr>
+          </thead>
+          <tbody>${prodRows}</tbody>
+        </table>
+      </div>` : '<div style="font-size:11px;color:var(--muted);padding:12px">✓ Sin productos pendientes</div>';
+
+    return `<div class="cap-card" style="margin-bottom:14px">
+      <div class="cap-card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="cap-linea" style="color:${color}">${linea}</div>
+          <div class="cap-notas">${cap.notas}</div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Capacidad/día</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${color}">${hasDual?fmt(cap.kg_dia)+'–'+fmt(cap.kg_dia_max):fmt(cap.kg_dia)} kg</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">🔴 Déficit a entregar</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${totalKgPendienteNeto>0?'var(--red)':'var(--green)'}">
+              ${totalKgPendienteNeto>0?fmt(Math.round(totalKgPendienteNeto))+' kg':'✓ Cubierto'}
+            </div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Días necesarios</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${pct>100?'var(--red)':pct>75?'var(--orange)':'var(--text)'}">
+              ${diasLabel}
+            </div>
+          </div>
+          <div style="min-width:120px">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:4px">Carga semanal ${Math.round(pct)}%</div>
+            <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${prodTable}
+    </div>`;
+  }).join('');
+
+  document.getElementById('capacidadGrid').innerHTML = `<div style="display:flex;flex-direction:column;gap:0">${cards}</div>`;
+}
+function goToPlan(){switchTab('plan',document.querySelectorAll('.tab')[1]);}
+
+const lineas=[...new Set(CATALOG.map(p=>p.LINEA).filter(Boolean))].sort();
+// ======= MODO LECTURA =======
+const MODO_VISTA = new URLSearchParams(window.location.search).get('modo') === 'vista';
+
+function aplicarModoVista() {
+  if (!MODO_VISTA) return;
+
+  // Badge en header
+  const badge = document.createElement('div');
+  badge.innerHTML = '👁 MODO VISUALIZACIÓN';
+  badge.style.cssText = 'background:rgba(245,166,35,.15);color:var(--orange);border:1px solid var(--orange);padding:4px 12px;border-radius:20px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px';
+  document.querySelector('.header-right').prepend(badge);
+
+  // Ocultar tab CONTEO y CARGAR PEDIDOS
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.textContent.includes('CONTEO') || t.textContent.includes('PEDIDOS')) {
+      t.style.display = 'none';
+    }
+  });
+
+  // Abrir directo en Plan de Producción
+  const planTab = [...document.querySelectorAll('.tab')].find(t => t.textContent.includes('PLAN'));
+  if (planTab) switchTab('plan', planTab);
+
+  // IDs que se mantienen visibles en modo vista
+  const keepIds = [
+    // Plan
+    'planFilter','lineaFilterPlan','searchPlan','sortPlan','vt-lista','vt-semanal',
+    // Clientes
+    'clienteSearch','clienteSort','clienteVendedor','clienteTipo'
+  ];
+
+  document.querySelectorAll('button, input, select').forEach(el => {
+    const keep = keepIds.some(id => el.id === id);
+    const isExport = el.textContent && el.textContent.includes('EXPORTAR');
+    // En clientes: ocultar botones de cambio de tipo (→ DIST / → PROD)
+    const isToggleTipo = el.textContent && (el.textContent.includes('→ DIST') || el.textContent.includes('→ PROD'));
+    if (!keep && !isExport) el.style.display = 'none';
+    if (isToggleTipo) el.style.display = 'none';
+  });
+}
+
+function init(){
+  initFirebase();
+  [document.getElementById('lineaFilter'),document.getElementById('lineaFilterPlan'),document.getElementById('ubicLineaFilter')].forEach(sel=>{
+    lineas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;sel.appendChild(o);});
+  });
+  const now=new Date();
+  document.getElementById('dateBadge').textContent=now.toLocaleDateString('es-MX',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+  const day=now.getDay();
+  const mon=new Date(now); mon.setDate(now.getDate()-(day===0?6:day-1));
+  const sat=new Date(mon); sat.setDate(mon.getDate()+5);
+  document.getElementById('weekBadge').textContent='Sem: '+mon.toLocaleDateString('es-MX',{day:'numeric',month:'short'})+' – '+sat.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+  filterProds();
+  cargarEstado();
+
+  // Monitor conexión Firebase
+  if (db) {
+    db.ref('.info/connected').on('value', snap => {
+      const online = snap.val();
+      document.getElementById('fbDot').style.background = online ? 'var(--green)' : 'var(--red)';
+      document.getElementById('fbTxt').textContent = online ? '● en línea' : '● sin conexión';
+      document.getElementById('fbTxt').style.color = online ? 'var(--green)' : 'var(--red)';
+    });
+  }
+
+  aplicarModoVista();
+}
+
+let filteredProds=[...CATALOG];
+function filterProds(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const l=document.getElementById('lineaFilter').value;
+  filteredProds=getAllProducts().filter(p=>(!q||p.PRODUCTO.toLowerCase().includes(q)||p.SKU.toLowerCase().includes(q))&&(!l||p.LINEA===l));
+  renderProductList();
+}
+function renderProductList(){
+  document.getElementById('productList').innerHTML=filteredProds.map(p=>{
+    const v=inventory[p.SKU]!==undefined?inventory[p.SKU]:'';
+    const isCustom=customProducts.some(c=>c.SKU===p.SKU);
+    return `<div class="product-card"><div class="prod-info"><div class="prod-name" title="${p.PRODUCTO}">${p.PRODUCTO}${isCustom?'<span class="custom-tag">CUSTOM</span>':''}</div><div class="prod-sku">${p.SKU}</div><div class="linea-tag">${p.LINEA||'—'}</div></div><div class="qty-control"><button class="edit-btn" onclick="openModal('${p.SKU}')" title="Editar producto">✏</button><button class="qty-btn" onclick="adjQty('${p.SKU}',-1)">−</button><input class="qty-input${v!==''?' filled':''}" type="number" min="0" id="q_${p.SKU}" value="${v}" placeholder="0" onchange="setQty('${p.SKU}',this.value)" onfocus="this.select()"><button class="qty-btn" onclick="adjQty('${p.SKU}',1)">+</button></div></div>`;
+  }).join('');
+  document.getElementById('countInfo').textContent=Object.keys(inventory).length+' productos contados';
+}
+function setQty(s,v){const n=parseFloat(v);if(v===''||isNaN(n))delete inventory[s];else inventory[s]=Math.max(0,n);const el=document.getElementById('q_'+s);if(el)el.classList.toggle('filled',v!=='');updateCountInfo();guardarEstado();}
+function adjQty(s,d){const el=document.getElementById('q_'+s);const c=inventory[s]||0;inventory[s]=Math.max(0,c+d);if(el){el.value=inventory[s];el.classList.add('filled');}updateCountInfo();guardarEstado();}
+function saveConteo(){toast('✓ Conteo guardado — '+Object.keys(inventory).length+' productos','success');}
+function clearConteo(){
+  if(!confirm('¿Limpiar todo el conteo y el historial?'))return;
+  inventory={};
+  capturaLog=[];
+  ubicSelectedSku=null;
+  document.querySelectorAll('.qty-input').forEach(el=>{el.value='';el.classList.remove('filled');});
+  document.getElementById('ubicSelected').style.display='none';
+  renderCapturaLog();
+  renderUbicProductList();
+  updateCountInfo();
+  guardarEstado();
+}
+
+// ======= CUSTOM PRODUCTS =======
+let customProducts = []; // added/edited by user at runtime
+let editingSku = null;
+
+function getAllProducts() {
+  const deleted = window.deletedSkus || [];
+  const edited = {};
+  customProducts.forEach(p => { edited[p.SKU] = p; });
+  const base = CATALOG
+    .filter(p => !deleted.includes(p.SKU))
+    .map(p => edited[p.SKU] ? edited[p.SKU] : p);
+  const newOnes = customProducts.filter(p => !CATALOG.some(c => c.SKU === p.SKU) && !deleted.includes(p.SKU));
+  return [...base, ...newOnes];
+}
+
+function openModal(sku) {
+  editingSku = sku;
+  const overlay = document.getElementById('modalOverlay');
+  const delBtn = document.getElementById('modalDeleteBtn');
+  // Populate linea select
+  const mLinea = document.getElementById('mLinea');
+  const allLineas = [...new Set([...lineas,'EMPACADOS','NUECES Y SEMILLAS'])].sort();
+  mLinea.innerHTML = allLineas.map(l=>`<option value="${l}">${l}</option>`).join('');
+
+  if (sku) {
+    // Edit mode — find product in full merged list
+    const p = getAllProducts().find(x => x.SKU === sku);
+    if (!p) return;
+    document.getElementById('modalTitle').textContent = 'EDITAR PRODUCTO';
+    document.getElementById('mProd').value = p.PRODUCTO;
+    document.getElementById('mSku').value = p.SKU;
+    document.getElementById('mSku').disabled = true;
+    mLinea.value = p.LINEA || allLineas[0];
+    document.getElementById('mMin').value = p.INV_MIN_PZS || 0;
+    document.getElementById('mMax').value = p.INV_MAX || 0;
+    document.getElementById('mReq').value = p.REQ_DIARIO || 0;
+    document.getElementById('mInv').value = inventory[sku] !== undefined ? inventory[sku] : (p.INV_ACTUAL || 0);
+    delBtn.style.display = '';
+  } else {
+    // New product mode
+    document.getElementById('modalTitle').textContent = 'NUEVO PRODUCTO';
+    document.getElementById('mProd').value = '';
+    document.getElementById('mSku').value = '';
+    document.getElementById('mSku').disabled = false;
+    mLinea.value = allLineas[0];
+    document.getElementById('mMin').value = 0;
+    document.getElementById('mMax').value = 0;
+    document.getElementById('mReq').value = 0;
+    document.getElementById('mInv').value = 0;
+    delBtn.style.display = 'none';
+  }
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('mProd').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingSku = null;
+}
+
+function saveProduct() {
+  const prod = document.getElementById('mProd').value.trim().toUpperCase();
+  const sku  = document.getElementById('mSku').value.trim().toUpperCase();
+  const linea = document.getElementById('mLinea').value;
+  const min  = parseFloat(document.getElementById('mMin').value) || 0;
+  const max  = parseFloat(document.getElementById('mMax').value) || 0;
+  const req  = parseFloat(document.getElementById('mReq').value) || 0;
+  const inv  = parseFloat(document.getElementById('mInv').value) || 0;
+
+  if (!prod) { toast('El nombre del producto es requerido','warn'); return; }
+  if (!sku)  { toast('El SKU es requerido','warn'); return; }
+
+  const record = {
+    LINEA: linea, PRODUCTO: prod, SKU: sku,
+    INV_MIN_PZS: min, INV_MAX: max, REQ_DIARIO: req,
+    INV_ACTUAL: inv, TOTAL_PENDIENTE: 0,
+    REQ_SEMANAL: req * 6
+  };
+
+  // Save inventory value
+  if (inv > 0) inventory[sku] = inv;
+
+  // Update or add to customProducts
+  const idx = customProducts.findIndex(p => p.SKU === sku);
+  if (idx >= 0) customProducts[idx] = record;
+  else customProducts.push(record);
+
+  // If editing existing catalog product, also update linea filters if new linea
+  if (!lineas.includes(linea)) lineas.push(linea);
+
+  closeModal();
+  filterProds();
+  guardarEstado();
+  toast(editingSku ? '✓ Producto actualizado' : '✓ Producto agregado', 'success');
+}
+
+function deleteProduct() {
+  if (!editingSku) return;
+  const pwd = prompt('🔒 Ingresa la contraseña para eliminar este producto:');
+  if (pwd === null) return; // cancelled
+  if (pwd !== 'krisos') {
+    toast('❌ Contraseña incorrecta', 'warn');
+    return;
+  }
+  // Remove from catalog overrides and custom products
+  customProducts = customProducts.filter(p => p.SKU !== editingSku);
+  // Add to deleted list so it's hidden from base catalog too
+  if (!window.deletedSkus) window.deletedSkus = [];
+  if (!window.deletedSkus.includes(editingSku)) window.deletedSkus.push(editingSku);
+  delete inventory[editingSku];
+  delete pendingOrders[editingSku];
+  closeModal();
+  filterProds();
+  guardarEstado();
+  toast('✓ Producto eliminado', 'success');
+}
+
+// ======= CONTEO MODE =======
+let conteoMode = 'lista';
+let ubicSelectedSku = null;
+let capturaLog = []; // [{sku, producto, pasillo, nivel, cantidad, hora}]
+let ubicFiltrados = [];
+
+function setConteoMode(mode) {
+  conteoMode = mode;
+  document.getElementById('conteo-lista').style.display = mode==='lista' ? '' : 'none';
+  document.getElementById('conteo-ubicacion').style.display = mode==='ubicacion' ? '' : 'none';
+  document.getElementById('cm-lista').classList.toggle('active', mode==='lista');
+  document.getElementById('cm-ubicacion').classList.toggle('active', mode==='ubicacion');
+  if (mode==='ubicacion') {
+    filterUbicProds();
+    renderCapturaLog();
+  }
+}
+
+function filterUbicProds() {
+  const q = (document.getElementById('ubicSearchInput').value||'').toLowerCase();
+  const l = document.getElementById('ubicLineaFilter').value;
+  ubicFiltrados = getAllProducts().filter(p =>
+    (!q || p.PRODUCTO.toLowerCase().includes(q) || p.SKU.toLowerCase().includes(q)) &&
+    (!l || p.LINEA === l)
+  ).slice(0, 80);
+  renderUbicProductList();
+}
+
+function renderUbicProductList() {
+  const list = document.getElementById('ubicProductList');
+  if (!ubicFiltrados.length) {
+    list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted);text-align:center">Sin resultados</div>';
+    return;
+  }
+  list.innerHTML = ubicFiltrados.map(p => {
+    const acum = inventory[p.SKU] || 0;
+    const isSelected = ubicSelectedSku === p.SKU;
+    return `<div onclick="selectUbicProd('${p.SKU}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;border-bottom:1px solid rgba(42,48,69,.4);background:${isSelected?'rgba(245,166,35,.08)':''};transition:background .1s"
+      onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='${isSelected?'rgba(245,166,35,.08)':''}'">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.PRODUCTO}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${p.SKU} · ${p.LINEA||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
+        ${acum > 0 ? `<div style="font-family:var(--mono);font-size:11px;color:var(--green);font-weight:700">${acum} pzs</div>
+        <div style="font-size:9px;color:var(--muted)">acumulado</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectUbicProd(sku) {
+  ubicSelectedSku = sku;
+  const p = getAllProducts().find(x => x.SKU === sku);
+  if (!p) return;
+  document.getElementById('ubicSelName').textContent = p.PRODUCTO + ' — ' + p.SKU;
+  document.getElementById('ubicSelected').style.display = '';
+  document.getElementById('ubicQtyInput').value = '';
+  document.getElementById('ubicQtyInput').focus();
+  renderUbicProductList();
+}
+
+function registrarCaptura() {
+  if (!ubicSelectedSku) { toast('Selecciona un producto primero','warn'); return; }
+  const qty = parseFloat(document.getElementById('ubicQtyInput').value);
+  if (!qty || qty <= 0) { toast('Ingresa una cantidad válida','warn'); return; }
+  const pasillo = document.getElementById('pasilloSel').value;
+  const nivel = document.getElementById('nivelSel').value;
+  const p = getAllProducts().find(x => x.SKU === ubicSelectedSku);
+  const now = new Date();
+  const hora = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+  // Sum to inventory
+  inventory[ubicSelectedSku] = (inventory[ubicSelectedSku] || 0) + qty;
+
+  // Log entry
+  capturaLog.unshift({
+    sku: ubicSelectedSku,
+    producto: p ? p.PRODUCTO : ubicSelectedSku,
+    pasillo, nivel: 'Nivel '+nivel,
+    cantidad: qty,
+    hora,
+    total: inventory[ubicSelectedSku]
+  });
+
+  // Sync to lista mode: update the input if visible
+  const listaInput = document.getElementById('q_'+ubicSelectedSku);
+  if (listaInput) {
+    listaInput.value = inventory[ubicSelectedSku];
+    listaInput.classList.add('filled');
+  }
+  // Also re-render lista so if user switches modes it's up to date
+  renderProductList();
+
+  // Reset input
+  document.getElementById('ubicQtyInput').value = '';
+  document.getElementById('ubicQtyInput').focus();
+
+  updateCountInfo();
+  renderUbicProductList();
+  renderCapturaLog();
+  guardarEstado();
+  toast(`✓ +${qty} pzs en ${pasillo} / Nivel ${nivel}`, 'success');
+}
+
+function renderCapturaLog() {
+  const el = document.getElementById('capturaLog');
+  if (!capturaLog.length) {
+    el.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--muted);text-align:center">Sin capturas aún</div>';
+    return;
+  }
+  el.innerHTML = capturaLog.map((c,i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid rgba(42,48,69,.4);${i===0?'background:rgba(245,166,35,.04)':''}">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;min-width:40px">${c.hora}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.producto}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${c.pasillo} / ${c.nivel}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">+${c.cantidad} pzs</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Total: ${c.total} pzs</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearLog() {
+  if (!confirm('¿Limpiar solo el historial? (el conteo acumulado se mantiene)')) return;
+  capturaLog = [];
+  renderCapturaLog();
+  guardarEstado();
+}
+
+function importInventario(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      let rows = []; // will be [{sku, cantidad}]
+
+      if (ext === 'csv') {
+        const text = new TextDecoder('latin1').decode(new Uint8Array(e.target.result));
+        const lines = text.split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
+        let skuCol = -1, qtyCol = -1, startRow = 0;
+        for (let i = 0; i < Math.min(5, lines.length); i++) {
+          const h = lines[i].map(c => c.toUpperCase());
+          const si = h.findIndex(c => c.includes('SKU') || c.includes('SKUS'));
+          const qi = h.findIndex(c => c.includes('CANTIDAD') || c.includes('TOTAL'));
+          if (si >= 0 && qi >= 0) { skuCol = si; qtyCol = qi; startRow = i+1; break; }
+        }
+        if (skuCol < 0) { toast('No se encontraron columnas SKU/Cantidad','warn'); return; }
+        rows = lines.slice(startRow).map(r => ({
+          sku: (r[skuCol]||'').trim(),
+          cantidad: parseFloat(r[qtyCol]) || 0
+        }));
+      } else {
+        // XLSX / XLSM — use SheetJS
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        // Prefer "INVENTARIO KALOS" sheet
+        const sheetName = wb.SheetNames.find(s => s.toUpperCase().includes('INVENTARIO')) || wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+        // Find header row — look for SKUS + CANTIDAD headers
+        let skuCol = -1, qtyCol = -1, startRow = 0;
+        for (let i = 0; i < Math.min(5, data.length); i++) {
+          const h = data[i].map(c => String(c).toUpperCase().trim());
+          // Match "SKUS" or "SKU" in any column
+          const si = h.findIndex(c => c === 'SKUS' || c === 'SKU' || c.includes('SKUS'));
+          // Match "CANTIDAD TOTAL" or "CANTIDAD"
+          const qi = h.findIndex(c => c.includes('CANTIDAD'));
+          if (si >= 0 && qi >= 0) { skuCol = si; qtyCol = qi; startRow = i+1; break; }
+        }
+
+        // Fallback: use known fixed positions from INVENTARIO KALOS format
+        // Col 4 = SKUS, Col 1 = CANTIDAD TOTAL EN PZ
+        if (skuCol < 0 && data.length > 1) {
+          skuCol = 4; qtyCol = 1; startRow = 1;
+        }
+
+        rows = data.slice(startRow).map(r => ({
+          sku: String(r[skuCol]||'').trim(),
+          cantidad: parseFloat(r[qtyCol]) || 0
+        }));
+      }
+
+      // Match against catalog
+      const catalogSkus = new Set(getAllProducts().map(p => p.SKU));
+      const newInventory = {};
+      let matched = 0, skipped = 0;
+
+      rows.forEach(({sku, cantidad}) => {
+        if (!sku || sku === 'nan' || sku === '') return;
+        if (catalogSkus.has(sku)) {
+          newInventory[sku] = cantidad;
+          matched++;
+        } else {
+          skipped++;
+        }
+      });
+
+      if (matched === 0) { toast('No se empataron SKUs con el catálogo — verifica el archivo','warn'); return; }
+
+      inventory = newInventory;
+      renderProductList();
+      filterUbicProds();
+      updateCountInfo();
+      guardarEstado();
+      guardarHistorial('inventario', {inventario: newInventory});
+      toast(`✓ Inventario importado — ${matched} productos cargados${skipped > 0 ? ` (${skipped} sin empatar)` : ''}`, 'success');
+
+    } catch(err) {
+      console.error(err);
+      toast('Error al leer el archivo: ' + err.message, 'warn');
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function updateCountInfo() {
+  const n = Object.keys(inventory).length;
+  document.getElementById('countInfo').textContent = n + ' productos contados';
+}
+
+function setView(v){
+  currentView=v;
+  document.getElementById('view-lista').style.display=v==='lista'?'':'none';
+  document.getElementById('view-semanal').style.display=v==='semanal'?'':'none';
+  document.getElementById('vt-lista').classList.toggle('active',v==='lista');
+  document.getElementById('vt-semanal').classList.toggle('active',v==='semanal');
+  renderPlan();
+}
+function getFiltered(){
+  const filt=document.getElementById('planFilter').value;
+  const linea=document.getElementById('lineaFilterPlan').value;
+  const q=(document.getElementById('searchPlan').value||'').toLowerCase();
+  const sort=(document.getElementById('sortPlan')?.value)||'urgencia';
+  const data = getAllProducts().map(eff).filter(p=>{
+    const u=urg(p);
+    let ok=true;
+    if(filt==='critical') ok=u==='critical';
+    else if(filt==='urgent') ok=['critical','high','medium'].includes(u);
+    else if(filt==='produce') ok=p.A_PRODUCIR>0;
+    if(linea) ok=ok&&p.LINEA===linea;
+    if(q) ok=ok&&(p.PRODUCTO.toLowerCase().includes(q)||p.SKU.toLowerCase().includes(q));
+    return ok;
+  });
+  // Apply sort
+  return data.sort((a,b)=>{
+    if(sort==='pendiente_desc') return b.TOTAL_PENDIENTE-a.TOTAL_PENDIENTE;
+    if(sort==='pendiente_asc')  return a.TOTAL_PENDIENTE-b.TOTAL_PENDIENTE;
+    if(sort==='inv_asc')        return a.INV_ACTUAL-b.INV_ACTUAL;
+    if(sort==='dias_asc')       return a.DIAS_COBERTURA-b.DIAS_COBERTURA;
+    // default: urgencia
+    return uOrder[urg(a)]-uOrder[urg(b)]||a.DIAS_COBERTURA-b.DIAS_COBERTURA;
+  });
+}
+function renderStats(){
+  const all=getAllProducts().map(eff);
+  const c=all.filter(p=>urg(p)==='critical').length;
+  const h=all.filter(p=>urg(p)==='high').length;
+  const m=all.filter(p=>urg(p)==='medium').length;
+  const g=all.filter(p=>['low','ok'].includes(urg(p))).length;
+  const cur=document.getElementById('planFilter').value;
+  const cards=[
+    {filt:'critical', label:'🔴 Críticos',       val:c, cls:'red'},
+    {filt:'urgent',   label:'🟠 Alta prioridad',  val:h, cls:'orange'},
+    {filt:'produce',  label:'🟡 Media prioridad', val:m, cls:'yellow'},
+    {filt:'all',      label:'🟢 Estables',        val:g, cls:'green'},
+  ];
+  document.getElementById('statsRow').innerHTML=cards.map(({filt,label,val,cls})=>{
+    const active = cur===filt;
+    return `<div class="stat-card" onclick="setStatFilter('${filt}')" style="cursor:pointer;border:1px solid ${active?`var(--${cls})`:'var(--border)'};background:${active?`rgba(var(--${cls}-rgb,200,200,200),.12)`:'var(--surface)'};transition:all .15s">
+      <div class="stat-label">${label}</div>
+      <div class="stat-val ${cls}">${val}</div>
+      ${active?`<div style="font-size:9px;font-family:var(--mono);color:var(--muted);margin-top:2px">▲ filtrando</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function setStatFilter(filt){
+  // Toggle: if already active, reset to 'all'
+  const cur = document.getElementById('planFilter').value;
+  document.getElementById('planFilter').value = cur===filt ? 'all' : filt;
+  renderPlan();
+}
+function renderPlan(){renderStats();if(currentView==='lista')renderLista();else renderSemanal();}
+function renderLista(){
+  const rows=getFiltered();
+  document.getElementById('planBody').innerHTML=rows.map((p,i)=>{
+    const u=urg(p);const m=uMeta[u];
+    const dias=p.DIAS_COBERTURA===999?'∞':p.DIAS_COBERTURA.toFixed(1);
+    const barW=Math.min(100,Math.max(0,p.DIAS_COBERTURA===999?100:(p.DIAS_COBERTURA/10)*100));
+    const ci=inventory[p.SKU]!==undefined?'color:var(--accent);font-weight:700':'';
+    return `<tr><td class="mono" style="color:var(--muted)">${i+1}</td><td><span class="pill ${m.cls}"><span class="urgency-dot ${m.dot}"></span>${m.label}</span></td><td style="font-size:11px;color:var(--muted)">${p.LINEA||'—'}</td><td class="product-cell">${p.PRODUCTO}</td><td class="mono" style="color:var(--muted);font-size:10px">${p.SKU}</td><td class="mono" style="${ci}">${fmt(p.INV_ACTUAL)}</td><td class="mono" style="color:${p.TOTAL_PENDIENTE>0?'var(--orange)':'var(--muted)'}">${fmt(p.TOTAL_PENDIENTE)}</td><td class="mono" style="color:${p.INV_NETO<0?'var(--red)':''}">${fmt(p.INV_NETO)}</td><td class="mono">${fmt(p.INV_MIN_PZS)}</td><td><div style="display:flex;align-items:center;gap:6px"><div class="bar-wrap"><div class="bar-fill" style="width:${barW}%;background:${m.color}"></div></div><span class="mono" style="font-size:11px;color:${p.DIAS_COBERTURA<0?'var(--red)':''}">${dias}d</span></div></td><td class="mono">${fmt(p.REQ_DIARIO)}</td><td class="mono" style="color:var(--blue)">${fmt(p.REQ_SEMANAL)}</td><td class="mono" style="color:${p.A_PRODUCIR>0?'var(--accent)':'var(--muted)'};font-weight:${p.A_PRODUCIR>0?700:400}">${fmt(p.A_PRODUCIR)}</td><td class="mono" style="color:${p.A_PRODUCIR_KG>0?'var(--green)':'var(--muted)'};font-weight:${p.A_PRODUCIR_KG>0?700:400}">${p.A_PRODUCIR_KG>0?fmt(p.A_PRODUCIR_KG)+' kg':'—'}</td></tr>`;
+  }).join('');
+}
+
+// ======= SCHEDULER CONFIG =======
+// arranque_hrs: tiempo de arranque al inicio del día (reduce capacidad)
+// setup_hrs: tiempo de cambio entre SKUs
+// turno_hrs: duración total del turno
+// multi: puede hacer más de un SKU por día
+// CASCARA: horno pequeño por defecto (4,500 kg/día, 10h turno, 30min arranque)
+// JAPONES FRITO: cada 3er día el arranque es 1.5h por cambio de aceite
+const SCHED_CONFIG = {
+  'SALADO':         {kg_dia:8500,  turno_hrs:10, arranque_hrs:0.75, multi:true,  setup_hrs:0.5 },
+  'CASCARA':        {kg_dia:4500,  kg_dia_max:13000, turno_hrs:10, arranque_hrs:0.5, arranque_hrs_max:0.67, multi:false, setup_hrs:0 },
+  'MITADES':        {kg_dia:21000, kg_dia_max:40000, turno_hrs:10, arranque_hrs:1.0, multi:true,  setup_hrs:1.0 },
+  'JAPONES FRITO':  {kg_dia:9500,  turno_hrs:10, arranque_hrs:1.0,  arranque_hrs_aceite:1.5, multi:true,  setup_hrs:0.5 },
+  'JAPONES NATURAL': {kg_dia:10000, turno_hrs:10, arranque_hrs:1.0,  multi:false, setup_hrs:0 },
+  'EXTRUIDO':       {kg_dia:3500,  turno_hrs:10, arranque_hrs:0.5,  multi:false, setup_hrs:0 },
+  'GARAPIÑADO':     {kg_dia:1500,  turno_hrs:10, arranque_hrs:0.25, multi:true,  setup_hrs:0.5 },
+  'FRITO':          {kg_dia:2400,  turno_hrs:10, arranque_hrs:0.67, multi:true,  setup_hrs:0.5 },
+  'ESPECIALIDADES': {kg_dia:2000,  turno_hrs:10, arranque_hrs:0.25, multi:true,  setup_hrs:0.5 },
+};
+const SCHED_DAYS = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+
+function buildSchedule() {
+  const allProds = getAllProducts().map(eff);
+
+  // Build working list
+  const workList = allProds
+    .filter(p => {
+      const cfg = SCHED_CONFIG[p.LINEA];
+      if (!cfg) return false;
+      return p.INV_NETO < p.INV_MIN_PZS || p.TOTAL_PENDIENTE > 0;
+    })
+    .map(p => {
+      const deficit = Math.max(0, p.INV_MIN_PZS - p.INV_NETO);
+      const targetPzs = Math.max(deficit, p.A_PRODUCIR > 0 ? Math.min(p.A_PRODUCIR, deficit + p.INV_MIN_PZS) : 0);
+      const targetKg = targetPzs * (p.KG_POR_PIEZA || 10);
+      return {
+        ...p,
+        cfg: SCHED_CONFIG[p.LINEA],
+        targetKg: Math.max(targetKg, 0),
+        kgRestante: Math.max(targetKg, 0),
+        priority: p.DIAS_COBERTURA === 999 ? 999 : p.DIAS_COBERTURA,
+      };
+    })
+    .filter(p => p.targetKg > 0);
+
+  // Track Japones Frito oil-change cycle (every 3rd day needs extra 30min startup)
+  // Day index 0=Lunes ... 5=Sabado. Oil change on day 2 (Wed) by default
+  const aceite_dias = new Set([2]); // day offsets (0-indexed) where oil changes
+
+  const schedule = {};
+  for (let di = 0; di < SCHED_DAYS.length; di++) {
+    const day = SCHED_DAYS[di];
+    schedule[day] = {};
+    const lineas = [...new Set(workList.map(p => p.LINEA))];
+
+    for (const linea of lineas) {
+      const cfg = SCHED_CONFIG[linea];
+      if (!cfg) continue;
+
+      const lineProds = workList
+        .filter(p => p.LINEA === linea && p.kgRestante > 0)
+        .sort((a,b) => {
+          if (Math.abs(a.priority - b.priority) > 0.1) return a.priority - b.priority;
+          return b.TOTAL_PENDIENTE - a.TOTAL_PENDIENTE;
+        });
+
+      if (!lineProds.length) continue;
+
+      // Calculate effective hours: turno - arranque
+      let arranque = cfg.arranque_hrs || 0;
+      // Japones Frito: every 3rd day (oil change) adds 30min to startup
+      if (linea === 'JAPONES FRITO' && aceite_dias.has(di)) {
+        arranque = cfg.arranque_hrs_aceite || 1.5;
+      }
+      const horasEfectivas = cfg.turno_hrs - arranque;
+      const kgDia = Math.round(cfg.kg_dia * (horasEfectivas / cfg.turno_hrs));
+      const kgPorHora = cfg.kg_dia / cfg.turno_hrs; // kg rate at full speed
+
+      const assignments = [];
+
+      if (!cfg.multi) {
+        // Single SKU per day
+        const p = lineProds[0];
+        const kg = Math.min(p.kgRestante, kgDia);
+        const pzs = kg / (p.KG_POR_PIEZA || 10);
+        p.kgRestante -= kg;
+        assignments.push({
+          sku:p.SKU, nombre:p.PRODUCTO, kg:Math.round(kg), pzs:Math.round(pzs),
+          diasCob:p.DIAS_COBERTURA, urgencia:urg(p)
+        });
+      } else {
+        // Multi SKU
+        let kgDisp = kgDia;
+        let skusEnDia = 0;
+        for (const p of lineProds) {
+          if (kgDisp <= 0) break;
+          if (skusEnDia > 0) {
+            const kgSetup = cfg.setup_hrs * kgPorHora;
+            if (kgDisp <= kgSetup) break;
+            kgDisp -= kgSetup;
+          }
+          const kg = Math.min(p.kgRestante, kgDisp);
+          const pzs = kg / (p.KG_POR_PIEZA || 10);
+          p.kgRestante -= kg;
+          kgDisp -= kg;
+          assignments.push({
+            sku:p.SKU, nombre:p.PRODUCTO, kg:Math.round(kg), pzs:Math.round(pzs),
+            diasCob:p.DIAS_COBERTURA, urgencia:urg(p)
+          });
+          skusEnDia++;
+        }
+      }
+
+      if (assignments.length) {
+        // Store kgDia actual (after startup deduction) and also full capacity for display
+        const aceiteMark = linea === 'JAPONES FRITO' && aceite_dias.has(di);
+        schedule[day][linea] = {
+          assignments,
+          kgDia,               // effective kg today
+          kgDiaFull: cfg.kg_dia, // max capacity
+          arranque,
+          horasEfectivas,
+          aceiteMark
+        };
+      }
+    }
+  }
+  return {schedule, workList};
+}
+
+function renderSemanal(){
+  const now=new Date();
+  const dayN=now.getDay();
+  const mon=new Date(now); mon.setDate(now.getDate()-(dayN===0?6:dayN-1));
+  const DAYS_META=[
+    {name:'LUNES',   cls:'monday',   offset:0},
+    {name:'MARTES',  cls:'tuesday',  offset:1},
+    {name:'MIÉRCOLES',cls:'wednesday',offset:2},
+    {name:'JUEVES',  cls:'thursday', offset:3},
+    {name:'VIERNES', cls:'friday',   offset:4},
+    {name:'SÁBADO',  cls:'saturday', offset:5}
+  ];
+
+  // Read active filters
+  const lineaFilt = document.getElementById('lineaFilterPlan').value;
+  const qFilt = (document.getElementById('searchPlan').value||'').toLowerCase();
+
+  const {schedule, workList} = buildSchedule();
+
+  // Summary: what's left after the week
+  const remaining = workList.filter(p=>p.kgRestante>0);
+
+  const uColors = {critical:'var(--red)',high:'var(--orange)',medium:'var(--yellow)',low:'var(--green)',ok:'var(--muted)'};
+  const uLabels = {critical:'CRÍTICO',high:'ALTO',medium:'MEDIO',low:'BAJO',ok:'OK'};
+  const uPills  = {critical:'pill-red',high:'pill-orange',medium:'pill-yellow',low:'pill-green',ok:'pill-gray'};
+
+  const dayCards = DAYS_META.map(d=>{
+    const date=new Date(mon); date.setDate(mon.getDate()+d.offset);
+    const isToday=date.toDateString()===now.toDateString();
+    const dayPlan=schedule[d.name]||{};
+    // Apply filters: line filter and search
+    const lineasHoy=Object.keys(dayPlan).filter(linea=>{
+      if(lineaFilt && linea !== lineaFilt) return false;
+      if(qFilt){
+        // Keep linea if any of its assignments match the search
+        const hasMatch = dayPlan[linea].assignments.some(a=>
+          a.nombre.toLowerCase().includes(qFilt) || a.sku.toLowerCase().includes(qFilt)
+        );
+        if(!hasMatch) return false;
+      }
+      return true;
+    });
+    const dateStr=date.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+    const totalKgDia=lineasHoy.reduce((s,l)=>s+dayPlan[l].assignments.reduce((ss,a)=>ss+a.kg,0),0);
+    const critN=lineasHoy.reduce((s,l)=>s+dayPlan[l].assignments.filter(a=>a.urgencia==='critical').length,0);
+    const highN=lineasHoy.reduce((s,l)=>s+dayPlan[l].assignments.filter(a=>['high','medium'].includes(a.urgencia)).length,0);
+
+    const badges=(critN?`<span class="pill pill-red">${critN} críticos</span>`:'')+
+      (highN?`<span class="pill pill-orange">${highN} urgentes</span>`:'')+
+      `<span class="mono" style="font-size:10px;color:var(--muted)">${fmt(totalKgDia)} kg totales</span>`;
+
+    const lineaBlocks = lineasHoy.map(linea=>{
+      const {assignments: allAssignments, kgDia, kgDiaFull, arranque, horasEfectivas, aceiteMark} = dayPlan[linea];
+      // Filter assignments by search if active
+      const assignments = qFilt
+        ? allAssignments.filter(a=>a.nombre.toLowerCase().includes(qFilt)||a.sku.toLowerCase().includes(qFilt))
+        : allAssignments;
+      const totalKg = assignments.reduce((s,a)=>s+a.kg,0);
+      const pct = Math.min(100, Math.round(totalKg/kgDia*100));
+      const barColor = pct>90?'var(--green)':pct>60?'var(--blue)':'var(--muted)';
+      const arranqueMin = Math.round(arranque*60);
+      const arranqueNote = aceiteMark
+        ? `<span style="color:var(--orange);font-size:9px;font-family:var(--mono)"> ⚠ CAMBIO ACEITE +30min (${arranqueMin}min arranque)</span>`
+        : `<span style="color:var(--muted);font-size:9px;font-family:var(--mono)"> ${arranqueMin}min arranque · ${horasEfectivas.toFixed(1)}h efectivas</span>`;
+      const rows = assignments.map(a=>{
+        const dc = a.diasCob===999?'∞':a.diasCob.toFixed(1);
+        const dotColor = uColors[a.urgencia];
+        const urgLabel = uLabels[a.urgencia];
+        return `<tr style="border-bottom:1px solid rgba(42,48,69,.4)">
+          <td style="padding:6px 4px 6px 0;width:24px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0"></span>
+          </td>
+          <td style="padding:6px 8px;white-space:normal;font-size:11px;max-width:200px;line-height:1.3">${a.nombre}</td>
+          <td style="padding:6px 8px;font-family:var(--mono);font-size:10px;color:var(--muted)">${a.sku}</td>
+          <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700">${fmt(a.pzs)}</td>
+          <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--green);font-weight:700">${fmt(a.kg)}</td>
+          <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:${a.diasCob<0?'var(--red)':a.diasCob<3?'var(--orange)':'var(--muted)'}">${dc}d</td>
+        </tr>`;
+      }).join('');
+
+      const thead = `<thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:5px 4px 5px 0;width:24px"></th>
+        <th style="padding:5px 8px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600">Producto</th>
+        <th style="padding:5px 8px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600">SKU</th>
+        <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;font-weight:600">A Producir Pzs</th>
+        <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:600">A Producir Kg</th>
+        <th style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600">Días Cob.</th>
+      </tr></thead>`;
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <span style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--accent)">${linea}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${fmt(totalKg)} / ${fmt(kgDia)} kg (${pct}%)</span>
+        </div>
+        <div style="margin-bottom:5px">${arranqueNote}</div>
+        <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:8px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px"></div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">${thead}<tbody>${rows}</tbody></table>
+      </div>`;
+    }).join('');
+
+    const content = lineasHoy.length===0
+      ? `<div style="padding:14px 20px;font-size:12px;color:var(--muted)">✓ Sin producción programada para este día</div>`
+      : `<div style="padding:14px 18px">${lineaBlocks}</div>`;
+
+    return `<div class="week-day-card ${d.cls}${isToday?' today-card':''}">
+      <div class="day-header" onclick="toggleDay(this)">
+        <div class="day-left">
+          <div class="day-title">${d.name}${isToday?` <span class="today-label">HOY</span>`:''}</div>
+          <div class="day-date">${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)}</div>
+        </div>
+        <div class="day-right">${badges}<span class="chevron" style="color:var(--muted);font-size:13px">${isToday?'▴':'▾'}</span></div>
+      </div>
+      <div class="day-content${isToday?'':' collapsed'}">${content}</div>
+    </div>`;
+  }).join('');
+
+  // Remaining after week
+  let remainHtml = '';
+  if (remaining.length > 0) {
+    const remRows = remaining
+      .sort((a,b)=>a.priority-b.priority)
+      .map(p=>`<tr>
+        <td><span class="pill ${uPills[urg(p)]}">${uLabels[urg(p)]}</span></td>
+        <td style="white-space:normal;font-size:11px;max-width:200px">${p.PRODUCTO}</td>
+        <td class="mono" style="font-size:10px;color:var(--muted)">${p.LINEA}</td>
+        <td class="mono" style="color:var(--orange)">${fmt(Math.round(p.kgRestante))} kg</td>
+        <td class="mono" style="color:var(--muted)">${Math.round(p.kgRestante/(p.KG_POR_PIEZA||10))} pzs</td>
+      </tr>`).join('');
+    remainHtml = `<div style="margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange)">
+        ⚠ PENDIENTE DESPUÉS DE LA SEMANA (${remaining.length} productos)
+      </div>
+      <div style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--surface2)">
+            <th style="padding:7px 12px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">Estado</th>
+            <th style="padding:7px 12px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">Producto</th>
+            <th style="padding:7px 12px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">Línea</th>
+            <th style="padding:7px 12px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">KG Restante</th>
+            <th style="padding:7px 12px;text-align:left;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase">Pzs Restante</th>
+          </tr></thead>
+          <tbody>${remRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('weekGrid').innerHTML = dayCards + remainHtml;
+}
+
+function toggleDay(h){const c=h.nextElementSibling;const ch=h.querySelector('.chevron');ch.textContent=c.classList.toggle('collapsed')?'▾':'▴';}
+
+function ev(e,cls){e.preventDefault();document.getElementById('uploadZone').className='upload-zone '+cls;}
+function dropFile(e){e.preventDefault();document.getElementById('uploadZone').className='upload-zone';const f=e.dataTransfer.files[0];if(f)processCSV(f);}
+function loadCSV(e){const f=e.target.files[0];if(f)processCSV(f);}
+function processCSV(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const lines=e.target.result.split('\n');
+    if(lines.length<2){toast('CSV vacío','warn');return;}
+    const sep=lines[0].includes(';')?';':',';
+    const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,'').toLowerCase());
+    const ci=hdrs.findIndex(h=>h==='codigo'||h==='código');
+    const pi=hdrs.findIndex(h=>h==='pendiente');
+    if(ci<0||pi<0){toast('No se encontraron columnas Codigo/Pendiente','warn');return;}
+    const np={};let cnt=0;
+    for(let i=1;i<lines.length;i++){
+      if(!lines[i].trim())continue;
+      const cols=lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
+      const sku=cols[ci].trim();
+      const pend=parseFloat(cols[pi])||0;
+      if(sku){np[sku]=(np[sku]||0)+pend;cnt++;}
+    }
+    pendingOrders=np;
+    guardarEstado();
+    const allProds=getAllProducts();
+    const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
+    const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
+    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo (otros productos): ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
+    toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
+  };
+  r.readAsText(file,'latin1');
+}
+
+let clientesData = []; // raw rows with client info
+let distribucionSkus = []; // SKUs manually marked as distribución
+
+function esDist(sku) {
+  // Distribución manual override
+  if (distribucionSkus.includes(sku)) return true;
+  // Si está en catálogo base con LINEA asignada → es PRODUCCIÓN PROPIA
+  const enCatalogo = CATALOG.find(p => p.SKU === sku);
+  if (enCatalogo && enCatalogo.LINEA && enCatalogo.LINEA.trim() !== '') return false;
+  // Si fue agregado como custom con línea → también producción propia
+  const custom = customProducts.find(p => p.SKU === sku);
+  if (custom && custom.LINEA && custom.LINEA.trim() !== '') return false;
+  // No está en catálogo o no tiene línea → distribución
+  return true;
+}
+
+function toggleDistribucion(sku, btn) {
+  const pwd = prompt('🔒 Contraseña para cambiar tipo de producto:');
+  if (pwd === null) return;
+  if (pwd !== 'krisos') { toast('❌ Contraseña incorrecta', 'warn'); return; }
+  if (distribucionSkus.includes(sku)) {
+    distribucionSkus = distribucionSkus.filter(s => s !== sku);
+    toast('✓ Movido a Producción propia', 'success');
+  } else {
+    distribucionSkus.push(sku);
+    toast('✓ Movido a Distribución', 'success');
+  }
+  guardarEstado();
+  renderClientes();
+}
+
+function processCSV(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const lines=e.target.result.split('\n');
+    if(lines.length<2){toast('CSV vacío','warn');return;}
+    const sep=lines[0].includes(';')?';':',';
+    const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,'').toLowerCase());
+    const ci   = hdrs.findIndex(h=>h==='codigo'||h==='código');
+    const pi   = hdrs.findIndex(h=>h==='pendiente');
+    const cli  = hdrs.findIndex(h=>h==='cliente');
+    const feci = hdrs.findIndex(h=>h==='creacion'||h==='creación');
+    const veni = hdrs.findIndex(h=>h==='vendedor');
+    const diri = hdrs.findIndex(h=>h==='direccioncliente'||h==='direccion'||h.includes('direcci'));
+    const pedi = hdrs.findIndex(h=>h==='pedido');
+    const desi = hdrs.findIndex(h=>h==='descripcion'||h==='descripción');
+    if(ci<0||pi<0){toast('No se encontraron columnas Codigo/Pendiente','warn');return;}
+
+    const np={}; let cnt=0;
+    const rawRows=[];
+
+    for(let i=1;i<lines.length;i++){
+      if(!lines[i].trim())continue;
+      const cols=lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
+      const sku  = cols[ci]?.trim();
+      const pend = parseFloat(cols[pi])||0;
+      if(!sku) continue;
+      np[sku]=(np[sku]||0)+pend;
+      cnt++;
+      if(pend>0) rawRows.push({
+        sku,
+        pend,
+        cliente:  cli>=0  ? cols[cli]?.trim()  : '—',
+        fecha:    feci>=0 ? cols[feci]?.trim() : '—',
+        vendedor: veni>=0 ? cols[veni]?.trim() : '—',
+        direccion:diri>=0 ? cols[diri]?.trim() : '—',
+        pedido:   pedi>=0 ? cols[pedi]?.trim() : '—',
+        desc:     desi>=0 ? cols[desi]?.trim() : sku,
+      });
+    }
+
+    pendingOrders = np;
+    clientesData  = rawRows;
+    guardarEstado();
+    guardarHistorial('pedidos', {pedidos: np, clientes: rawRows});
+
+    const allProds=getAllProducts();
+    const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
+    const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
+    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo: ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN →</button>`;
+    toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
+
+    // Populate vendedor filter
+    const vendedores=[...new Set(rawRows.map(r=>r.vendedor).filter(Boolean))].sort();
+    const vSel=document.getElementById('clienteVendedor');
+    if(vSel){
+      vSel.innerHTML='<option value="">Todos los vendedores</option>'+
+        vendedores.map(v=>`<option value="${v}">${v}</option>`).join('');
+    }
+  };
+  r.readAsText(file,'latin1');
+}
+
+function renderClientes(){
+  const q       = (document.getElementById('clienteSearch')?.value||'').toLowerCase();
+  const sortBy  = document.getElementById('clienteSort')?.value || 'kg_desc';
+  const vendedor= document.getElementById('clienteVendedor')?.value||'';
+  const tipo    = document.getElementById('clienteTipo')?.value || 'todos';
+  const allProds= getAllProducts();
+
+  if(!clientesData.length){
+    document.getElementById('clientesGrid').innerHTML=
+      `<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">
+        📂 Carga primero tu CSV de pedidos en la pestaña <strong>CARGAR PEDIDOS</strong>
+      </div>`;
+    return;
+  }
+
+  // Filter rows by tipo before aggregating
+  const filteredRows = clientesData.filter(row => {
+    if (tipo === 'produccion')   return !esDist(row.sku);
+    if (tipo === 'distribucion') return  esDist(row.sku);
+    return true;
+  });
+
+  // Aggregate by client
+  const clMap = {};
+  filteredRows.forEach(row=>{
+    if(!row.cliente||row.cliente==='—') return;
+    if(!clMap[row.cliente]) clMap[row.cliente]={
+      cliente:row.cliente, vendedor:row.vendedor, direccion:row.direccion,
+      pedidos:new Set(), totalPzs:0, totalKg:0,
+      fechaMin:row.fecha, items:[]
+    };
+    const cl = clMap[row.cliente];
+    cl.pedidos.add(row.pedido);
+    cl.totalPzs += row.pend;
+    // Get kg per unit from catalog
+    const prod = allProds.find(p=>p.SKU===row.sku);
+    const kg   = prod ? (prod.KG_POR_PIEZA||10) : 10;
+    cl.totalKg += row.pend * kg;
+    // Track oldest date
+    if(row.fecha && row.fecha < cl.fechaMin) cl.fechaMin = row.fecha;
+    cl.items.push(row);
+  });
+
+  // Convert to array and filter
+  let clientes = Object.values(clMap).filter(cl=>{
+    if(q && !cl.cliente.toLowerCase().includes(q)) return false;
+    if(vendedor && cl.vendedor !== vendedor) return false;
+    return cl.totalPzs > 0;
+  });
+
+  // Sort
+  clientes.sort((a,b)=>{
+    if(sortBy==='kg_desc')      return b.totalKg-a.totalKg;
+    if(sortBy==='pzs_desc')     return b.totalPzs-a.totalPzs;
+    if(sortBy==='pedidos_desc') return b.pedidos.size-a.pedidos.size;
+    if(sortBy==='fecha_asc')    return (a.fechaMin||'').localeCompare(b.fechaMin||'');
+    if(sortBy==='nombre_asc')   return a.cliente.localeCompare(b.cliente);
+    return b.totalKg-a.totalKg;
+  });
+
+  if(!clientes.length){
+    document.getElementById('clientesGrid').innerHTML=
+      `<div style="padding:40px;text-align:center;color:var(--muted)">Sin resultados</div>`;
+    return;
+  }
+
+  const cards = clientes.map((cl,idx)=>{
+    const pedidosArr = [...cl.pedidos].join(', ');
+    const diasDeuda = cl.fechaMin ? Math.floor((Date.now()-new Date(cl.fechaMin.split('/').reverse().join('-')))/86400000) : '?';
+    const deudaColor = diasDeuda>30?'var(--red)':diasDeuda>14?'var(--orange)':'var(--green)';
+
+    const detalleRows = cl.items
+      .sort((a,b)=>b.pend-a.pend)
+      .map(row=>{
+        const prod = allProds.find(p=>p.SKU===row.sku);
+        const kg   = prod ? Math.round(row.pend*(prod.KG_POR_PIEZA||10)) : '?';
+        const dist = esDist(row.sku);
+        const tipoBadge = dist
+          ? `<span style="font-size:8px;background:rgba(107,117,153,.2);color:var(--muted);padding:1px 5px;border-radius:3px;font-family:var(--mono)">DIST</span>`
+          : `<span style="font-size:8px;background:rgba(0,214,143,.1);color:var(--green);padding:1px 5px;border-radius:3px;font-family:var(--mono)">PROD</span>`;
+        return `<tr style="border-bottom:1px solid rgba(42,48,69,.4)">
+          <td style="padding:5px 10px;font-size:11px">${row.desc||row.sku} ${tipoBadge}</td>
+          <td style="padding:5px 10px;font-family:var(--mono);font-size:11px;text-align:right;white-space:nowrap">${row.pend} pzs</td>
+          <td style="padding:5px 10px;font-family:var(--mono);font-size:11px;text-align:right;color:var(--green);white-space:nowrap">${kg} kg</td>
+          <td style="padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap">${row.fecha}</td>
+          <td style="padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted)">${row.pedido}</td>
+          <td style="padding:5px 10px;text-align:center">
+            <button onclick="toggleDistribucion('${row.sku}',this)" title="${dist?'Mover a Producción':'Mover a Distribución'}"
+              class="btn-tipo-toggle"
+              style="background:none;border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:4px;cursor:pointer;font-size:10px;font-family:var(--mono)${MODO_VISTA?';display:none':''}">
+              ${dist?'→ PROD':'→ DIST'}
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
+      <!-- Header clickeable -->
+      <div onclick="toggleCliente(${idx})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;flex-wrap:wrap;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">${cl.cliente}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${cl.vendedor} · ${cl.direccion||'—'}</div>
+        </div>
+        <div style="display:flex;gap:20px;align-items:center;flex-shrink:0">
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Pzs pendientes</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${fmt(Math.round(cl.totalPzs))}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">KG pendientes</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">${fmt(Math.round(cl.totalKg))} kg</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Desde</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${deudaColor}">${diasDeuda}d</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Pedidos</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700">${cl.pedidos.size}</div>
+          </div>
+          <span id="chev-${idx}" style="color:var(--muted);font-size:14px">▾</span>
+        </div>
+      </div>
+      <!-- Detalle colapsable -->
+      <div id="det-${idx}" style="display:none;border-top:1px solid var(--border)">
+        <div style="padding:6px 10px;background:var(--bg);font-size:10px;color:var(--muted);font-family:var(--mono)">
+          Pedido(s): ${pedidosArr} · Desde: ${cl.fechaMin}
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--bg)">
+            <th style="padding:6px 10px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Producto</th>
+            <th style="padding:6px 10px;text-align:right;font-size:9px;color:var(--accent);text-transform:uppercase">Pzs</th>
+            <th style="padding:6px 10px;text-align:right;font-size:9px;color:var(--green);text-transform:uppercase">KG</th>
+            <th style="padding:6px 10px;text-align:right;font-size:9px;color:var(--muted);text-transform:uppercase">Fecha pedido</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase"># Pedido</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;color:var(--muted);text-transform:uppercase">Tipo</th>
+          </tr></thead>
+          <tbody>${detalleRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  const total_pzs = clientes.reduce((s,c)=>s+c.totalPzs,0);
+  const total_kg  = clientes.reduce((s,c)=>s+c.totalKg,0);
+
+  document.getElementById('clientesGrid').innerHTML=
+    `<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;flex:1;min-width:140px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Clientes con deuda</div>
+        <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)">${clientes.length}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;flex:1;min-width:140px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Total pzs pendientes</div>
+        <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)">${fmt(Math.round(total_pzs))}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;flex:1;min-width:140px">
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Total KG pendientes</div>
+        <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green)">${fmt(Math.round(total_kg))} kg</div>
+      </div>
+    </div>
+    ${cards}`;
+}
+
+function toggleCliente(idx){
+  const det  = document.getElementById('det-'+idx);
+  const chev = document.getElementById('chev-'+idx);
+  const open = det.style.display==='none';
+  det.style.display  = open?'':'none';
+  chev.textContent   = open?'▴':'▾';
+}
+
+function exportCSV(){
+  const ul={critical:'CRITICO',high:'ALTO',medium:'MEDIO',low:'BAJO',ok:'OK'};
+  const csv=[['Prioridad','Linea','Producto','SKU','Inv Actual','Pendiente','Inv Neto','Min','Dias Cobertura','Req Diario','Req Semanal','A Producir'],...data.map(p=>[ul[urg(p)],p.LINEA,p.PRODUCTO,p.SKU,p.INV_ACTUAL,p.TOTAL_PENDIENTE,p.INV_NETO,p.INV_MIN_PZS,p.DIAS_COBERTURA===999?'N/A':p.DIAS_COBERTURA.toFixed(1),p.REQ_DIARIO,p.REQ_SEMANAL,p.A_PRODUCIR])].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='plan_produccion_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ======= ASISTENTE IA =======
+let aiOpen = false;
+let aiHistory = [];
+
+function toggleAI() {
+  aiOpen = !aiOpen;
+  const panel = document.getElementById('aiPanel');
+  panel.style.display = aiOpen ? 'flex' : 'none';
+  panel.style.flexDirection = 'column';
+  if (aiOpen) document.getElementById('aiInput').focus();
+}
+
+function aiPreset(msg) {
+  document.getElementById('aiInput').value = msg;
+  sendAI();
+}
+
+function buildContext() {
+  // Build a rich context from current data
+  const all = getAllProducts().map(eff);
+  const criticos = all.filter(p => urg(p) === 'critical');
+  const altos    = all.filter(p => urg(p) === 'high');
+  const medios   = all.filter(p => urg(p) === 'medium');
+
+  // Top products by pending orders
+  const conPendiente = all.filter(p => p.TOTAL_PENDIENTE > 0)
+    .sort((a,b) => b.TOTAL_PENDIENTE - a.TOTAL_PENDIENTE)
+    .slice(0, 15);
+
+  // Inventory summary by line
+  const porLinea = {};
+  all.forEach(p => {
+    if (!p.LINEA) return;
+    if (!porLinea[p.LINEA]) porLinea[p.LINEA] = {criticos:0, kg_pendiente:0};
+    if (urg(p) === 'critical') porLinea[p.LINEA].criticos++;
+    porLinea[p.LINEA].kg_pendiente += p.KG_PENDIENTE_NETO || 0;
+  });
+
+  // Top clients
+  const topClientes = clientesData.length > 0 ? (() => {
+    const clMap = {};
+    clientesData.forEach(r => {
+      if (!r.cliente) return;
+      if (!clMap[r.cliente]) clMap[r.cliente] = {pzs:0, kg:0};
+      clMap[r.cliente].pzs += r.pend;
+      const prod = all.find(p => p.SKU === r.sku);
+      clMap[r.cliente].kg += r.pend * (prod?.KG_POR_PIEZA || 10);
+    });
+    return Object.entries(clMap)
+      .sort((a,b) => b[1].kg - a[1].kg)
+      .slice(0, 10)
+      .map(([nombre, d]) => `${nombre}: ${Math.round(d.pzs)} pzs / ${Math.round(d.kg)} kg`);
+  })() : [];
+
+  const now = new Date().toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+
+  return `Eres el asistente de planeación de producción de KALOS, una empresa de botanas y cacahuates en México. Hoy es ${now}.
+
+RESUMEN DE INVENTARIO Y PRODUCCIÓN:
+- Productos CRÍTICOS (sin stock): ${criticos.length} productos
+  ${criticos.slice(0,8).map(p=>`• ${p.PRODUCTO} (${p.LINEA}): inv=${p.INV_ACTUAL}pzs, pedido=${p.TOTAL_PENDIENTE}pzs, días=${p.DIAS_COBERTURA.toFixed(1)}`).join('\n  ')}
+
+- Productos URGENTES (< 1 día): ${altos.length} productos
+  ${altos.slice(0,5).map(p=>`• ${p.PRODUCTO}: ${p.DIAS_COBERTURA.toFixed(1)}d`).join('\n  ')}
+
+- Productos MEDIOS (< 3 días): ${medios.length} productos
+
+TOP PRODUCTOS CON MÁS PEDIDOS PENDIENTES:
+${conPendiente.map(p=>`• ${p.PRODUCTO} (${p.LINEA}): ${p.TOTAL_PENDIENTE} pzs pendientes, inv=${p.INV_ACTUAL}`).join('\n')}
+
+CARGA POR LÍNEA (KG déficit a entregar):
+${Object.entries(porLinea).map(([l,d])=>`• ${l}: ${d.criticos} críticos, ${Math.round(d.kg_pendiente)} kg déficit`).join('\n')}
+
+CAPACIDADES DE PRODUCCIÓN (kg/día):
+• SALADO: 8,500 | CASCARA: 4,500-13,000 | MITADES: 21,000-40,000
+• JAPONES FRITO: 9,500 | JAPONES NATURAL: 10,000 | EXTRUIDO: 3,500
+• GARAPIÑADO: 1,500 | FRITO: 2,400 | ESPECIALIDADES: 2,000
+
+TOP 10 CLIENTES CON MÁS KG PENDIENTES:
+${topClientes.join('\n')}
+
+Total clientes con deuda: ${new Set(clientesData.map(r=>r.cliente)).size}
+Total piezas pendientes: ${conPendiente.reduce((s,p)=>s+p.TOTAL_PENDIENTE,0).toLocaleString()}
+
+Responde en español, de forma directa y práctica. Usa datos concretos del contexto. Máximo 200 palabras. Si te preguntan sobre un producto específico, busca el más parecido en los datos.`;
+}
+
+async function sendAI() {
+  const input = document.getElementById('aiInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  const btn = document.getElementById('aiSendBtn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  // Add user message
+  addAIMessage(msg, 'user');
+
+  // Add loading
+  const loadId = 'ai-load-' + Date.now();
+  addAIMessage('✦ Analizando tus datos...', 'loading', loadId);
+
+  try {
+    const context = buildContext();
+    aiHistory.push({role:'user', content: msg});
+    const messages = aiHistory.slice(-6);
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 800,
+        temperature: 0.7,
+        messages: [
+          {role: 'system', content: context},
+          ...messages
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Error API Groq');
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'Sin respuesta.';
+
+    // Remove loading, add response
+    document.getElementById(loadId)?.remove();
+    addAIMessage(reply, 'bot');
+    aiHistory.push({role:'assistant', content: reply});
+
+  } catch(err) {
+    document.getElementById(loadId)?.remove();
+    addAIMessage('❌ Error al conectar con la IA. Verifica tu conexión.', 'bot');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '↑';
+}
+
+function addAIMessage(text, type, id='') {
+  const container = document.getElementById('aiMessages');
+  const div = document.createElement('div');
+  div.className = `ai-msg ai-msg-${type}`;
+  if (id) div.id = id;
+  div.innerHTML = text.replace(/\n/g,'<br>');
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+
+init();
+</script>
+
+<style>
+.ai-msg { padding:10px 13px; border-radius:10px; font-size:12px; line-height:1.5; max-width:90%; }
+.ai-msg-bot { background:var(--bg); border:1px solid var(--border); color:var(--text); align-self:flex-start; }
+.ai-msg-user { background:rgba(245,166,35,.15); border:1px solid rgba(245,166,35,.3); color:var(--text); align-self:flex-end; text-align:right; }
+.ai-msg-loading { color:var(--muted); font-style:italic; align-self:flex-start; }
+.ai-chip { background:var(--bg); border:1px solid var(--border); color:var(--muted); padding:4px 9px; border-radius:12px; cursor:pointer; font-size:10px; font-family:var(--mono); white-space:nowrap; }
+.ai-chip:hover { border-color:var(--accent); color:var(--accent); }
+</style>
+
+<!-- AI ASSISTANT BUTTON -->
+<div id="aiBtn" onclick="toggleAI()" title="Asistente IA"
+  style="position:fixed;bottom:24px;right:24px;z-index:9999;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#f5a623,#e8890c);box-shadow:0 4px 20px rgba(245,166,35,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .2s"
+  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+  🤖
+</div>
+
+<!-- AI CHAT PANEL -->
+<div id="aiPanel" style="display:none;position:fixed;bottom:90px;right:24px;z-index:9998;width:390px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.5);flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--border);border-radius:14px 14px 0 0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🤖</span>
+      <div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px">ASISTENTE KALOS</div>
+        <div style="font-size:10px;color:var(--muted)">Producción · Inventario · Clientes</div>
+      </div>
+    </div>
+    <button onclick="toggleAI()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1">✕</button>
+  </div>
+  <div id="aiMessages" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div class="ai-msg ai-msg-bot">
+      👋 Hola, soy tu asistente de planeación KALOS.<br><br>
+      Tengo acceso a tu inventario, pedidos y clientes en tiempo real. Puedes preguntarme:<br><br>
+      📋 ¿Qué debo producir esta semana?<br>
+      🔴 ¿Qué productos están críticos?<br>
+      👥 ¿Qué cliente tiene más pedido pendiente?<br>
+      📈 ¿Qué productos se mueven más?<br>
+      📦 ¿Cuántos días dura el inventario de [producto]?
+    </div>
+  </div>
+  <div style="padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)">
+    <button onclick="aiPreset('¿Qué debo producir esta semana?')" class="ai-chip">📋 Plan semana</button>
+    <button onclick="aiPreset('¿Qué productos están críticos ahora?')" class="ai-chip">🔴 Críticos</button>
+    <button onclick="aiPreset('¿Qué cliente tiene más kg pendiente?')" class="ai-chip">👥 Top cliente</button>
+    <button onclick="aiPreset('¿Qué productos tienen más demanda?')" class="ai-chip">📈 Más demanda</button>
+  </div>
+  <div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border)">
+    <input id="aiInput" type="text" placeholder="Pregunta algo sobre tu operación..."
+      style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:12px;outline:none;font-family:var(--sans)"
+      onkeydown="if(event.key==='Enter')sendAI()">
+    <button onclick="sendAI()" id="aiSendBtn"
+      style="background:var(--accent);border:none;color:#000;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px">
+      ↑
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>
