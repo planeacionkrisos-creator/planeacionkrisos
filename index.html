@@ -355,7 +355,7 @@
 <div class="panel" id="tab-clientes">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <input type="text" id="clienteSearch" placeholder="Buscar cliente..." oninput="renderClientes()"
-      style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
     <select id="clienteSort" onchange="renderClientes()"
       style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
       <option value="kg_desc">↓ Mayor KG pendiente</option>
@@ -374,6 +374,9 @@
       <option value="produccion">🏭 Solo producción propia</option>
       <option value="distribucion">📦 Solo distribución</option>
     </select>
+    <input type="text" id="clienteProductoSearch" placeholder="🔍 Filtrar por producto..." oninput="renderClientes()"
+      style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--accent);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none"
+      title="Busca un producto específico para ver qué clientes lo tienen pendiente">
   </div>
   <div id="clientesGrid"></div>
 </div>
@@ -903,7 +906,7 @@ function aplicarModoVista() {
     // Plan
     'planFilter','lineaFilterPlan','searchPlan','sortPlan','vt-lista','vt-semanal',
     // Clientes
-    'clienteSearch','clienteSort','clienteVendedor','clienteTipo'
+    'clienteSearch','clienteSort','clienteVendedor','clienteTipo','clienteProductoSearch'
   ];
 
   document.querySelectorAll('button, input, select').forEach(el => {
@@ -1803,10 +1806,11 @@ function processCSV(file){
 }
 
 function renderClientes(){
-  const q       = (document.getElementById('clienteSearch')?.value||'').toLowerCase();
-  const sortBy  = document.getElementById('clienteSort')?.value || 'kg_desc';
-  const vendedor= document.getElementById('clienteVendedor')?.value||'';
-  const tipo    = document.getElementById('clienteTipo')?.value || 'todos';
+  const q          = (document.getElementById('clienteSearch')?.value||'').toLowerCase();
+  const sortBy     = document.getElementById('clienteSort')?.value || 'kg_desc';
+  const vendedor   = document.getElementById('clienteVendedor')?.value||'';
+  const tipo       = document.getElementById('clienteTipo')?.value || 'todos';
+  const qProducto  = (document.getElementById('clienteProductoSearch')?.value||'').toLowerCase();
   const allProds= getAllProducts();
 
   if(!clientesData.length){
@@ -1817,11 +1821,15 @@ function renderClientes(){
     return;
   }
 
-  // Filter rows by tipo before aggregating
+  // Filter rows by tipo and producto before aggregating
   const filteredRows = clientesData.filter(row => {
     if (tipo === 'produccion')   return !esDist(row.sku);
     if (tipo === 'distribucion') return  esDist(row.sku);
     return true;
+  }).filter(row => {
+    if (!qProducto) return true;
+    return (row.desc||row.sku||'').toLowerCase().includes(qProducto) ||
+           (row.sku||'').toLowerCase().includes(qProducto);
   });
 
   // Aggregate by client
@@ -1900,26 +1908,26 @@ function renderClientes(){
 
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden">
       <!-- Header clickeable -->
-      <div onclick="toggleCliente(${idx})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;flex-wrap:wrap;gap:10px">
-        <div style="flex:1;min-width:0">
+      <div onclick="toggleCliente(${idx})" style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 18px;cursor:pointer;flex-wrap:wrap;gap:10px">
+        <div style="flex:1;min-width:0;margin-bottom:4px">
           <div style="font-size:13px;font-weight:700;margin-bottom:2px">${cl.cliente}</div>
           <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${cl.vendedor} · ${cl.direccion||'—'}</div>
         </div>
-        <div style="display:flex;gap:20px;align-items:center;flex-shrink:0">
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Pzs pendientes</div>
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">${fmt(Math.round(cl.totalPzs))}</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <div style="text-align:center;min-width:60px">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Pzs pend.</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)">${fmt(Math.round(cl.totalPzs))}</div>
           </div>
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">KG pendientes</div>
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">${fmt(Math.round(cl.totalKg))} kg</div>
+          <div style="text-align:center;min-width:70px">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">KG pend.</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green)">${fmt(Math.round(cl.totalKg))} kg</div>
           </div>
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Desde</div>
+          <div style="text-align:center;min-width:40px">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Desde</div>
             <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${deudaColor}">${diasDeuda}d</div>
           </div>
-          <div style="text-align:center">
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Pedidos</div>
+          <div style="text-align:center;min-width:40px">
+            <div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Ped.</div>
             <div style="font-family:var(--mono);font-size:13px;font-weight:700">${cl.pedidos.size}</div>
           </div>
           <span id="chev-${idx}" style="color:var(--muted);font-size:14px">▾</span>
@@ -1949,7 +1957,10 @@ function renderClientes(){
   const total_kg  = clientes.reduce((s,c)=>s+c.totalKg,0);
 
   document.getElementById('clientesGrid').innerHTML=
-    `<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+    `${qProducto ? `<div style="background:rgba(245,166,35,.1);border:1px solid var(--accent);border-radius:8px;padding:10px 16px;margin-bottom:12px;font-size:12px;font-family:var(--mono);color:var(--accent)">
+      🔍 Filtrando por producto: <strong>${qProducto.toUpperCase()}</strong> — ${clientes.length} clientes con este pendiente · ${fmt(Math.round(total_pzs))} pzs · ${fmt(Math.round(total_kg))} kg
+    </div>` : ''}
+    <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;flex:1;min-width:140px">
         <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Clientes con deuda</div>
         <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)">${clientes.length}</div>
