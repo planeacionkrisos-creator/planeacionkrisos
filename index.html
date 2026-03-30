@@ -624,6 +624,76 @@ const uMeta={
   low:{label:'BAJO',cls:'pill-green',dot:'u-low',color:'var(--green)'},
   ok:{label:'OK',cls:'pill-gray',dot:'u-ok',color:'var(--muted)'}
 };
+// ======= PREDICCIONES DINÁMICAS (PLAN) =======
+let productPredictions = {}; // Cache: {[SKU]: {avgDaily, minAvg, maxAvg, ...}}
+
+async function loadProductPredictions() {
+  if (!db) return;
+  try {
+    const invSnap = await db.ref('kalos/historial/inventario').once('value');
+    const pedSnap = await db.ref('kalos/historial/pedidos').once('value');
+    const invData = invSnap.val() || {};
+    const pedData = pedSnap.val() || {};
+
+    // Construir fechas de los últimos 30 días
+    const today = new Date();
+    const dates = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+
+    // Procesar cada SKU del catálogo
+    for (const prod of CATALOG) {
+      const sku = prod.SKU;
+      if (!sku) continue;
+
+      // Extraer datos por fecha para este SKU
+      const invByDate = {};
+      const pedByDate = {};
+
+      Object.values(invData).forEach(entry => {
+        if (!entry.fecha || !entry.inventario) return;
+        const val = entry.inventario[sku];
+        if (val !== undefined) invByDate[entry.fecha] = val;
+      });
+
+      Object.values(pedData).forEach(entry => {
+        if (!entry.fecha || !entry.pedidos) return;
+        const val = entry.pedidos[sku];
+        if (val !== undefined) pedByDate[entry.fecha] = val;
+      });
+
+      // Construir series
+      const invSeries = dates.map(d => invByDate[d] || null);
+      const pedSeries = dates.map(d => pedByDate[d] || null);
+
+      // Calcular predicción
+      const pred = predictDemand(pedSeries, invSeries, dates);
+      
+      if (pred) {
+        // Guardar métricas útiles para el plan
+        const avgMin = pred.minProjection.length > 0 ? Math.min(...pred.minProjection) : pred.avgDaily * 0.7;
+        const avgMax = pred.maxProjection.length > 0 ? Math.max(...pred.maxProjection) : pred.avgDaily * 1.3;
+        
+        productPredictions[sku] = {
+          avgDaily: pred.avgDaily,
+          minAvg: Math.round(avgMin),
+          maxAvg: Math.round(avgMax),
+          trend: pred.trend,
+          slope: pred.slope,
+          daysOfCoverage: pred.daysOfCoverage
+        };
+      }
+    }
+
+    console.log('✓ Predicciones cargadas para', Object.keys(productPredictions).length, 'productos');
+  } catch (e) {
+    console.error('Error cargando predicciones:', e);
+  }
+}
+
 function fmt(n){if(n===null||n===undefined)return'—';return Number(n).toLocaleString('es-MX',{maximumFractionDigits:0});}
 function eff(p){
   const inv  = inventory[p.SKU]!==undefined ? inventory[p.SKU] : p.INV_ACTUAL;
@@ -636,15 +706,36 @@ function eff(p){
     : (p.DIAS_DISPONIBLES !== undefined && p.DIAS_DISPONIBLES !== 0 ? p.DIAS_DISPONIBLES
        : (p.REQ_DIARIO > 0 ? neto / p.REQ_DIARIO : 999));
   const kgPorPieza = p.KG_POR_PIEZA || 10;
-  const deficitVsMin    = Math.max(0, p.INV_MIN_PZS - neto);
+  
+  // Usar predicción dinámica para determinar stock de SEGURIDAD
+  const pred = productPredictions[p.SKU];
+  let nivelSeguridad;
+  if (pred) {
+    // Stock objetivo = máximo de la banda predicha (estar preparado para picos)
+    // Esto asegura que siempre hayas producido lo suficiente para variabilidad
+    nivelSeguridad = pred.maxAvg;
+  } else {
+    // Fallback: usar mínimo del catálogo si no hay predicción
+    nivelSeguridad = p.INV_MIN_PZS;
+  }
+  
+  // Producir para:
+  // 1. Cubrir DÉFICIT vs nivel de seguridad (stock de resguardo)
+  // 2. Cubrir PEDIDOS pendientes
+  const deficitVsSolidez = Math.max(0, nivelSeguridad - neto);
   const pedidosSinCubrir = Math.max(0, pend - inv);
-  const aProducir = Math.max(deficitVsMin, pedidosSinCubrir);
+  const aProducir = Math.max(deficitVsSolidez, pedidosSinCubrir);
   const pzsPendientesNetos = Math.max(0, pend - inv);
   return {...p, INV_ACTUAL:inv, TOTAL_PENDIENTE:pend, INV_NETO:neto, DIAS_COBERTURA:dias,
     A_PRODUCIR: aProducir,
     A_PRODUCIR_KG: Math.round(aProducir * kgPorPieza),
     KG_PENDIENTE_NETO: Math.round(pzsPendientesNetos * kgPorPieza),
-    KG_POR_PIEZA: kgPorPieza};
+    KG_POR_PIEZA: kgPorPieza,
+    // Agregar datos de predicción si disponibles
+    PRED_AVG_DAILY: pred?.avgDaily || null,
+    PRED_MIN: pred?.minAvg || null,
+    PRED_MAX: pred?.maxAvg || null,
+    PRED_TREND: pred?.trend || null};
 }
 
 function switchTab(t,el){
@@ -958,6 +1049,10 @@ function init(){
       document.getElementById('fbDot').style.background = online ? 'var(--green)' : 'var(--red)';
       document.getElementById('fbTxt').textContent = online ? '● en línea' : '● sin conexión';
       document.getElementById('fbTxt').style.color = online ? 'var(--green)' : 'var(--red)';
+      // Cargar predicciones cuando se conecta para actualizar el plan
+      if (online) {
+        loadProductPredictions().then(() => renderPlan());
+      }
     });
   }
 
@@ -1367,12 +1462,32 @@ function getFiltered(){
   });
   // Apply sort
   return data.sort((a,b)=>{
-    if(sort==='pendiente_desc') return b.TOTAL_PENDIENTE-a.TOTAL_PENDIENTE;
-    if(sort==='pendiente_asc')  return a.TOTAL_PENDIENTE-b.TOTAL_PENDIENTE;
+    const aProd = Number(a.A_PRODUCIR)||0;
+    const bProd = Number(b.A_PRODUCIR)||0;
+    const aPend = Number(a.TOTAL_PENDIENTE)||0;
+    const bPend = Number(b.TOTAL_PENDIENTE)||0;
+    const aUrg = uOrder[urg(a)] || 99;
+    const bUrg = uOrder[urg(b)] || 99;
+    if(sort==='pendiente_desc') {
+      const d = bProd - aProd;
+      if (d !== 0) return d;
+      const dp = bPend - aPend;
+      if (dp !== 0) return dp;
+      if (aUrg !== bUrg) return aUrg - bUrg;
+      return a.INV_NETO - b.INV_NETO;
+    }
+    if(sort==='pendiente_asc') {
+      const d = aProd - bProd;
+      if (d !== 0) return d;
+      const dp = aPend - bPend;
+      if (dp !== 0) return dp;
+      if (aUrg !== bUrg) return aUrg - bUrg;
+      return a.INV_NETO - b.INV_NETO;
+    }
     if(sort==='inv_asc')        return a.INV_ACTUAL-b.INV_ACTUAL;
     if(sort==='dias_asc')       return a.DIAS_COBERTURA-b.DIAS_COBERTURA;
     // default: urgencia
-    return uOrder[urg(a)]-uOrder[urg(b)]||a.DIAS_COBERTURA-b.DIAS_COBERTURA;
+    return aUrg - bUrg || a.DIAS_COBERTURA-b.DIAS_COBERTURA;
   });
 }
 function renderStats(){
@@ -2174,14 +2289,82 @@ async function renderHistChart(sku) {
     }).join('');
 
     const unit = histUnit === 'kg' ? 'kg' : 'pzs';
+    
+    // PREDICCIÓN: extender los datos con proyección
+    const prediction = predictDemand(pedSeries, invSeries, dates);
+    const extendedDates = [...dates];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(new Date(dates[dates.length - 1]));
+      d.setDate(d.getDate() + i);
+      extendedDates.push(d.toISOString().slice(0, 10));
+    }
+    
+    // Extender series con proyecciones
+    const pedSeriesExtended = [...pedSeries, ...prediction.nextWeek];
+    const invSeriesExtended = [...invSeries, ...Array(7).fill(null)]; // Inventario no proyecta, solo null
+    const minSeriesExtended = [...invSeries.map(() => null), ...prediction.minProjection];
+    const maxSeriesExtended = [...invSeries.map(() => null), ...prediction.maxProjection];
+    
+    // Recalcular escala con datos extendidos
+    const allValsExtended = [...pedSeriesExtended, ...invSeriesExtended, ...minSeriesExtended, ...maxSeriesExtended].filter(v => v !== null);
+    const maxVExtended = Math.max(...allValsExtended, 1);
+    const minVExtended = 0;
+    const scaleXExtended = i => padL + (i / (extendedDates.length - 1)) * (w - padL - padR);
+    const scaleYExtended = v => padT + (1 - (v - minVExtended) / (maxVExtended - minVExtended)) * (h - padT - padB);
+    
+    // Reconstruir paths con nueva escala
+    const buildPathExtended = (series, color, isDashed = false) => {
+      const pts = series.map((v, i) => v !== null ? `${scaleXExtended(i).toFixed(1)},${scaleYExtended(v).toFixed(1)}` : null);
+      let d = ''; let inPath = false;
+      pts.forEach((pt, i) => {
+        if (pt) { d += (inPath ? ' L' : ' M') + pt; inPath = true; }
+        else { inPath = false; }
+      });
+      const dashStr = isDashed ? ' stroke-dasharray="5,5"' : '';
+      return d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"${dashStr}/>` : '';
+    };
+    
+    // Función para renderizar puntos de datos
+    const buildDotsExtended = (series, color) => series.map((v, i) =>
+      v !== null ? `<circle cx="${scaleXExtended(i).toFixed(1)}" cy="${scaleYExtended(v).toFixed(1)}" r="3.5" fill="${color}" stroke="var(--bg)" stroke-width="1.5">
+        <title>${extendedDates[i]}: ${v.toLocaleString()} ${unit}</title></circle>` : ''
+    ).join('');
+    
+    // Y axis labels ajustados
+    const yTicksExtended = [0, 0.25, 0.5, 0.75, 1].map(t => {
+      const val = Math.round(minVExtended + t * (maxVExtended - minVExtended));
+      const y = scaleYExtended(val);
+      return `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${val.toLocaleString()}</text>
+              <line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5"/>`;
+    }).join('');
+
+    // X axis labels
+    const stepExtended = Math.ceil(extendedDates.length / 10);
+    const xLabelsExtended = extendedDates.map((d, i) => {
+      if (i % stepExtended !== 0 && i !== extendedDates.length - 1) return '';
+      const parts = d.split('-');
+      const label = `${parts[2]}/${parts[1]}`;
+      const x = scaleXExtended(i);
+      const isProjection = i >= dates.length;
+      const opacity = isProjection ? '0.5' : '1';
+      return `<text x="${x.toFixed(1)}" y="${h - padB + 16}" text-anchor="middle" font-size="10" fill="var(--muted)" opacity="${opacity}">${label}</text>`;
+    }).join('');
+    
+    // Línea vertical separadora entre histórico y predicción
+    const separatorX = scaleXExtended(dates.length - 1);
+    const separator = `<line x1="${separatorX.toFixed(1)}" y1="${padT}" x2="${separatorX.toFixed(1)}" y2="${h - padB}" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>`;
+
     const svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
       <style>text{font-family:monospace}</style>
-      ${yTicks}
-      ${xLabels}
-      ${buildPath(invSeries, 'var(--accent)')}
-      ${buildPath(pedSeries, 'var(--red)')}
-      ${buildDots(invSeries, 'var(--accent)')}
-      ${buildDots(pedSeries, 'var(--red)')}
+      ${yTicksExtended}
+      ${xLabelsExtended}
+      ${separator}
+      ${buildPathExtended(invSeriesExtended, 'var(--accent)', false)}
+      ${buildPathExtended(pedSeriesExtended, 'var(--red)', false)}
+      ${prediction ? buildPathExtended(minSeriesExtended, 'var(--orange)', true) : ''}
+      ${prediction ? buildPathExtended(maxSeriesExtended, 'var(--orange)', true) : ''}
+      ${buildDotsExtended(invSeriesExtended, 'var(--accent)')}
+      ${buildDotsExtended(pedSeriesExtended, 'var(--red)')}
     </svg>`;
 
     // Stats
@@ -2192,12 +2375,19 @@ async function renderHistChart(sku) {
     const maxInv = invVals.length ? Math.max(...invVals) : 0;
     const maxPed = pedVals.length ? Math.max(...pedVals) : 0;
 
+    const predictionStats = prediction ? [
+      {label:'Tendencia demanda', val: prediction.trend, color: prediction.trendColor},
+      {label:'Demanda promedio/día', val: prediction.avgDaily.toLocaleString()+' '+unit, color:'var(--red)'},
+      {label:'Días cobertura (inv/dda)', val: prediction.daysOfCoverage.toLocaleString()+' días', color: prediction.daysOfCoverage < 3 ? 'var(--red)' : (prediction.daysOfCoverage < 7 ? 'var(--orange)' : 'var(--green)')},
+    ] : [];
+
     document.getElementById('histChartArea').innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)">${prod.PRODUCTO}</div>
-        <div style="display:flex;gap:14px;font-size:11px;font-family:var(--mono)">
+        <div style="display:flex;gap:14px;font-size:11px;font-family:var(--mono);flex-wrap:wrap">
           <span style="color:var(--accent)">● Inventario</span>
-          <span style="color:var(--red)">● Pedidos pendientes</span>
+          <span style="color:var(--red)">● Pedidos</span>
+          <span style="color:var(--orange)">┆ Banda predicción (mín-máx)</span>
         </div>
       </div>
       ${svg}`;
@@ -2209,6 +2399,7 @@ async function renderHistChart(sku) {
       {label:'Pedido promedio', val: avgPed.toLocaleString()+' '+unit, color:'var(--red)'},
       {label:'Pedido máximo', val: maxPed.toLocaleString()+' '+unit, color:'var(--red)'},
       {label:'Días registrados', val: invVals.length+' días', color:'var(--muted)'},
+      ...predictionStats
     ].map(s => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
       <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${s.label}</div>
       <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${s.color}">${s.val}</div>
@@ -2349,6 +2540,74 @@ async function exportPDFVentas(btn) {
   }
   btn.textContent = '📄 PDF VENTAS';
   btn.disabled = false;
+}
+
+// ======= EXPORTAR DEMANDA A EXCEL/CSV =======
+// ======= PREDICCIÓN DE DEMANDA BASADA EN HISTÓRICO =======
+function predictDemand(pedSeries, invSeries, dates) {
+  // Obtener valores válidos de los últimos 7-10 días
+  const recentDays = 7;
+  const recentPed = pedSeries.slice(-recentDays).filter(v => v !== null);
+  
+  if (recentPed.length < 2) {
+    return null; // No hay datos suficientes
+  }
+
+  // Calcular promedio y tendencia
+  const avgPed = recentPed.reduce((a, b) => a + b, 0) / recentPed.length;
+  
+  // Calcular tendencia (pendiente de regresión simple)
+  const n = recentPed.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += recentPed[i];
+    sumXY += i * recentPed[i];
+    sumX2 += i * i;
+  }
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  
+  // Calcular banda de mínimos y máximos
+  const minVal = Math.min(...recentPed);
+  const maxVal = Math.max(...recentPed);
+  const midVal = avgPed;
+  const minSlope = (maxVal - minVal) / recentPed.length * -0.3; // Banda más suave
+  const maxSlope = (maxVal - minVal) / recentPed.length * 0.3;
+  
+  // Proyectar para los próximos 7 días
+  // Usar promedio diario en lugar de extrapolación lineal (más realista)
+  const futureProj = [];
+  const futureProjMin = [];
+  const futureProjMax = [];
+  for (let i = 0; i < 7; i++) {
+    const projected = Math.round(avgPed); // Usar promedio, no tendencia lineal
+    const projMin = Math.max(0, minVal + minSlope * i);
+    const projMax = Math.max(0, maxVal + maxSlope * i);
+    futureProj.push(projected);
+    futureProjMin.push(Math.round(projMin));
+    futureProjMax.push(Math.round(projMax));
+  }
+  
+  // Calcular variación
+  const variation = Math.abs(slope) > 2 ? (slope > 0 ? 'Aumentando ↗' : 'Disminuyendo ↘') : 'Estable →';
+  const varColor = slope > 2 ? 'var(--red)' : slope < -2 ? 'var(--green)' : 'var(--yellow)';
+  
+  // Calcular días de cobertura (inventario / demanda diaria promedio)
+  const lastInv = invSeries[invSeries.length - 1];
+  const demandDaily = Math.max(avgPed, 1);
+  const daysOfCoverage = lastInv ? Math.round(lastInv / demandDaily * 10) / 10 : 0;
+  
+  return {
+    trend: variation,
+    trendColor: varColor,
+    avgDaily: Math.round(avgPed),
+    daysOfCoverage: daysOfCoverage,
+    slope: Math.round(slope * 100) / 100,
+    nextWeek: futureProj,
+    minProjection: futureProjMin,
+    maxProjection: futureProjMax
+  };
 }
 
 function renderHistorial() {
