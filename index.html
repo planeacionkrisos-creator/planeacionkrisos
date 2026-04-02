@@ -60,6 +60,12 @@
   .stat-val.green{color:var(--green);}
   .plan-controls{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;}
   .plan-controls select,.plan-controls input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;}
+  .plan-controls select:hover,.plan-controls input:hover{border-color:var(--accent);} 
+  .plan-controls input[type="date"]{background:#ffffff;color:#1f2937; -webkit-text-fill-color:#1f2937; color-scheme: light; border:1px solid rgba(0,0,0,0.2);}
+  .plan-controls input[type="date"]:-webkit-autofill{background-color:#ffffff !important;color:#1f2937 !important;-webkit-text-fill-color:#1f2937 !important;}
+  .plan-controls input[type="date"]::-webkit-calendar-picker-indicator{filter:none;}
+  .plan-controls input[type="date"]::-ms-clear, .plan-controls input[type="date"]::-ms-expand { display: block; }
+  .plan-controls input[type="date"]::before { content: '\1F4C5'; font-size: 14px; color: #1f2937; position: relative; padding-right: 5px; }
   .plan-table-wrap{overflow:auto;border-radius:8px;border:1px solid var(--border);}
   table{width:100%;border-collapse:collapse;font-size:12px;}
   thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);white-space:nowrap;}
@@ -345,17 +351,19 @@
   <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
     <button id="prodViewProgramadoBtn" onclick="setProdView('programado')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Programado</button>
     <button id="prodViewHistBtn" onclick="setProdView('historial')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Registros históricos</button>
+    <button id="prodViewLibreBtn" onclick="setProdView('libre')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Captura libre</button>
+    <button id="prodViewChartBtn" onclick="setProdView('chart')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Cumplimiento</button>
   </div>
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
     <div>
       <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">LÍNEA</label>
-      <select id="prodLinea" onchange="prodViewMode==='programado'?renderProduccion():renderProduccionHistorial()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <select id="prodLinea" onchange="updateProdViewSelection()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
         <option value="">Seleccionar línea</option>
       </select>
     </div>
     <div>
       <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">DÍA</label>
-      <select id="prodDia" onchange="prodViewMode==='programado'?renderProduccion():renderProduccionHistorial()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+      <select id="prodDia" onchange="updateProdViewSelection()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
         <option value="LUNES">Lunes</option>
         <option value="MARTES">Martes</option>
         <option value="MIÉRCOLES">Miércoles</option>
@@ -1033,20 +1041,34 @@ function setProdView(mode) {
   prodViewMode = mode;
   const btnProgramado = document.getElementById('prodViewProgramadoBtn');
   const btnHistorial = document.getElementById('prodViewHistBtn');
-  if (btnProgramado && btnHistorial) {
-    btnProgramado.style.background = mode==='programado' ? 'var(--accent)' : 'var(--surface)';
-    btnProgramado.style.color = mode==='programado' ? '#000' : 'var(--text)';
-    btnHistorial.style.background = mode==='historial' ? 'var(--accent)' : 'var(--surface)';
-    btnHistorial.style.color = mode==='historial' ? '#000' : 'var(--text)';
-  }
+  const btnLibre = document.getElementById('prodViewLibreBtn');
+  const btnChart = document.getElementById('prodViewChartBtn');
+
+  [btnProgramado, btnHistorial, btnLibre, btnChart].forEach(btn => {
+    if (!btn) return;
+    btn.style.background = 'var(--surface)';
+    btn.style.color = 'var(--text)';
+  });
+
+  if (btnProgramado) { btnProgramado.style.background = mode==='programado' ? 'var(--accent)' : 'var(--surface)'; btnProgramado.style.color = mode==='programado' ? '#000' : 'var(--text)'; }
+  if (btnHistorial) { btnHistorial.style.background = mode==='historial' ? 'var(--accent)' : 'var(--surface)'; btnHistorial.style.color = mode==='historial' ? '#000' : 'var(--text)'; }
+  if (btnLibre)    { btnLibre.style.background    = mode==='libre' ? 'var(--accent)' : 'var(--surface)'; btnLibre.style.color    = mode==='libre' ? '#000' : 'var(--text)'; }
+  if (btnChart)    { btnChart.style.background    = mode==='chart' ? 'var(--accent)' : 'var(--surface)'; btnChart.style.color    = mode==='chart' ? '#000' : 'var(--text)'; }
 
   if (mode === 'programado') renderProduccion();
-  else renderProduccionHistorial();
+  else if (mode === 'historial') renderProduccionHistorial();
+  else if (mode === 'libre') renderProduccionLibre();
+  else if (mode === 'chart') renderProduccionChart();
+}
+
+function updateProdViewSelection() {
+  if (prodViewMode === 'programado') renderProduccion();
+  else if (prodViewMode === 'historial') renderProduccionHistorial();
+  else if (prodViewMode === 'libre') renderProduccionLibre();
+  else if (prodViewMode === 'chart') renderProduccionChart();
 }
 
 async function renderProduccionHistorial() {
-  const linea = document.getElementById('prodLinea').value;
-  const dia = document.getElementById('prodDia').value;
   const content = document.getElementById('prodContent');
 
   if (!db) {
@@ -1054,46 +1076,407 @@ async function renderProduccionHistorial() {
     return;
   }
 
-  content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Cargando historial...</div>';
+  setProdDayToToday();
+  setHistDateRangeDefaults();
+
+  // Render filter controls + table placeholder
+  content.innerHTML = `
+    <div style="padding:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Línea</div>
+          <select id="histProdLineaFilt" onchange="applyProdHistFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+            <option value="">Todas las líneas</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Día</div>
+          <select id="histProdDiaFilt" onchange="applyProdHistFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+            <option value="">Todos los días</option>
+            <option value="LUNES">Lunes</option>
+            <option value="MARTES">Martes</option>
+            <option value="MIÉRCOLES">Miércoles</option>
+            <option value="JUEVES">Jueves</option>
+            <option value="VIERNES">Viernes</option>
+            <option value="SÁBADO">Sábado</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Tipo</div>
+          <select id="histProdTipoFilt" onchange="applyProdHistFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+            <option value="">Todos</option>
+            <option value="programado">Programado</option>
+            <option value="libre">Captura libre</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Desde</div>
+          <input type="date" id="histProdDesde" onchange="applyProdHistFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Hasta</div>
+          <input type="date" id="histProdHasta" onchange="applyProdHistFilter()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+        </div>
+        <button onclick="clearProdHistFilter()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 12px;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;margin-top:14px">✕ LIMPIAR</button>
+      </div>
+      <div id="histProdResumen" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+      <div id="histProdBody">
+        <div style="padding:40px;text-align:center;color:var(--muted)">Cargando registros...</div>
+      </div>
+    </div>`;
+
+  // Populate linea select from known lines
+  const lineaSel = document.getElementById('histProdLineaFilt');
+  const allLineas = [...new Set([...lineas, 'EMPACADOS', 'NUECES Y SEMILLAS'])].sort();
+  allLineas.forEach(l => {
+    const o = document.createElement('option'); o.value = l; o.textContent = l; lineaSel.appendChild(o);
+  });
+
+  // Pre-fill from global selectors if set
+  const globalLinea = document.getElementById('prodLinea').value;
+  if (globalLinea) lineaSel.value = globalLinea;
 
   const snapshot = await db.ref('kalos/produccion').orderByChild('fecha').once('value');
   const data = snapshot.val() || {};
-  const rows = Object.values(data)
-    .map(r => ({...r, fecha: r.fecha || '', timestamp: new Date(r.fecha).getTime()}))
-    .sort((a,b)=>b.timestamp-a.timestamp);
+  window._prodHistData = Object.values(data)
+    .map(r => ({...r, fecha: r.fecha || '', _ts: r.ts || new Date(r.fecha).getTime()}))
+    .sort((a,b) => b._ts - a._ts);
+
+  applyProdHistFilter();
+}
+
+function clearProdHistFilter() {
+  const ids = ['histProdLineaFilt','histProdDiaFilt','histProdTipoFilt','histProdDesde','histProdHasta'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  applyProdHistFilter();
+}
+
+function applyProdHistFilter() {
+  const rows = window._prodHistData || [];
+  const linea = (document.getElementById('histProdLineaFilt')||{}).value || '';
+  const dia = (document.getElementById('histProdDiaFilt')||{}).value || '';
+  const tipo = (document.getElementById('histProdTipoFilt')||{}).value || '';
+  const desde = (document.getElementById('histProdDesde')||{}).value || '';
+  const hasta = (document.getElementById('histProdHasta')||{}).value || '';
 
   const filtered = rows.filter(r => {
-    if (linea && r.linea !== linea) return false;
-    if (dia && prodViewMode === 'historial' && r.dia && dia.toUpperCase() !== r.dia.toUpperCase()) return false;
+    if (linea && (!r.linea || r.linea.trim().toUpperCase() !== linea.trim().toUpperCase())) return false;
+    if (dia && (!r.dia || r.dia.trim().toUpperCase() !== dia.trim().toUpperCase())) return false;
+    if (tipo && (r.tipo || 'programado') !== tipo) return false;
+    const fechaRow = (r.fecha || '').slice(0,10);
+    if (desde && fechaRow < desde) return false;
+    if (hasta && fechaRow > hasta) return false;
     return true;
   });
 
+  const resumen = document.getElementById('histProdResumen');
+  const body = document.getElementById('histProdBody');
+  if (!body) return;
+
+  if (resumen) {
+    const totalKg = filtered.reduce((s, r) => s + (r.productos||[]).reduce((ss,p) => ss + getKgFromProductEntry(p), 0), 0);
+    const totalPzs = filtered.reduce((s, r) => s + (r.productos||[]).reduce((ss,p) => ss + (parseFloat(p.producido_pzs)||0), 0), 0);
+    resumen.textContent = `${filtered.length} registro(s) · ${totalKg.toFixed(1)} kg total · ${totalPzs.toFixed(0)} pzs total`;
+  }
+
   if (!filtered.length) {
-    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay registros de producción para la selección</div>';
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Sin registros para los filtros seleccionados.</div>';
     return;
   }
 
   const items = filtered.map(r => {
-    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('es-MX') : r.fecha;
-    const products = (r.productos||[]).map(p =>
-      `<tr><td style="padding:5px 8px">${p.nombre} (${p.sku})</td><td style="padding:5px 8px;text-align:right">${p.producido_pzs||0}</td><td style="padding:5px 8px;text-align:right">${p.producido_kg||0}</td></tr>`
+    const ts = r._ts ? new Date(r._ts).toLocaleString('es-MX') : r.fecha;
+    const kgTotal = (r.productos||[]).reduce((s,p)=>s + getKgFromProductEntry(p),0);
+    const pzsTotal = (r.productos||[]).reduce((s,p)=>s+((parseFloat(p.producido_pzs)||0)),0);
+    const capKg = (SCHED_CONFIG[r.linea] && SCHED_CONFIG[r.linea].kg_dia) || (CAPACIDADES[r.linea] && CAPACIDADES[r.linea].kg_dia) || 0;
+    const pct = capKg > 0 ? Math.round((kgTotal/capKg)*100) : null;
+    const pctColor = pct === null ? 'var(--muted)' : pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--yellow)' : 'var(--red)';
+    const tipoPill = r.tipo === 'libre'
+      ? `<span style="background:rgba(77,166,255,.15);color:var(--blue);padding:2px 7px;border-radius:10px;font-size:10px;font-family:var(--mono)">LIBRE</span>`
+      : `<span style="background:rgba(0,214,143,.1);color:var(--green);padding:2px 7px;border-radius:10px;font-size:10px;font-family:var(--mono)">PROG.</span>`;
+
+    const products = (r.productos||[]).filter(p => (parseFloat(p.producido_kg)||0) > 0 || (parseFloat(p.producido_pzs)||0) > 0).map(p =>
+      `<tr>
+        <td style="padding:5px 8px;font-size:11px">${p.nombre||p.sku} <span style="color:var(--muted);font-family:var(--mono)">(${p.sku})</span></td>
+        <td style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:11px">${parseFloat(p.producido_pzs||0).toFixed(0)}</td>
+        <td style="padding:5px 8px;text-align:right;font-family:var(--mono);font-size:11px">${getKgFromProductEntry(p).toFixed(1)}</td>
+      </tr>`
     ).join('');
 
-    return `<div style="border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:10px;padding:10px">
-      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <div style="font-size:13px;font-weight:700;color:var(--accent)">${r.linea} · ${r.dia}</div>
-        <div style="font-size:11px;color:var(--muted)">${ts}</div>
+    return `<div style="border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:700;color:var(--accent);font-family:var(--mono)">${r.linea||'—'}</span>
+          <span style="font-size:12px;color:var(--muted)">·</span>
+          <span style="font-size:12px;color:var(--text)">${r.dia||'—'}</span>
+          <span style="font-size:12px;color:var(--muted)">·</span>
+          <span style="font-size:11px;color:var(--muted)">${r.fecha||'—'}</span>
+          ${tipoPill}
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${pct !== null ? `<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${pctColor}">${pct}%</span>` : ''}
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text)">${kgTotal.toFixed(1)} kg</span>
+          <span style="font-size:10px;color:var(--muted)">${ts}</span>
+        </div>
       </div>
-      <div style="font-size:11px;margin-bottom:6px">Downtime: ${r.downtime_hrs || 0} hrs · ${r.downtime_razon || '—'}</div>
-      <div style="font-size:11px;margin-bottom:6px">Notas: ${r.notas || '—'}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="border-bottom:1px solid var(--border)"><th style="padding:5px;text-align:left">Producto</th><th style="padding:5px;text-align:right">Pzs</th><th style="padding:5px;text-align:right">Kg</th></tr></thead>
+      ${r.downtime_hrs > 0 ? `<div style="padding:6px 14px;font-size:11px;color:var(--orange);border-bottom:1px solid var(--border)">⏸ Downtime: ${r.downtime_hrs} hrs${r.downtime_razon ? ' — '+r.downtime_razon : ''}</div>` : ''}
+      ${r.notas ? `<div style="padding:6px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">📝 ${r.notas}</div>` : ''}
+      ${products ? `<table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase">Producto</th>
+          <th style="padding:5px 8px;text-align:right;font-size:10px;color:var(--muted);font-family:var(--mono)">PZS</th>
+          <th style="padding:5px 8px;text-align:right;font-size:10px;color:var(--muted);font-family:var(--mono)">KG</th>
+        </tr></thead>
         <tbody>${products}</tbody>
-      </table>
+        <tfoot><tr style="background:var(--bg);border-top:1px solid var(--border)">
+          <td style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--text)">TOTAL</td>
+          <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;font-weight:700">${pzsTotal.toFixed(0)}</td>
+          <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;font-weight:700">${kgTotal.toFixed(1)}</td>
+        </tr></tfoot>
+      </table>` : '<div style="padding:10px 14px;font-size:11px;color:var(--muted)">Sin detalle de productos</div>'}
     </div>`;
   }).join('');
 
-  content.innerHTML = `<div style="padding:10px">${items}</div>`;
+  body.innerHTML = items;
+}
+
+async function renderProduccionChart() {
+  const content = document.getElementById('prodContent');
+
+  if (!db) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Sin conexión a Firebase</div>';
+    return;
+  }
+
+  // Inject filter controls
+  const today = new Date().toISOString().slice(0,10);
+  const thirtyAgo = new Date(Date.now() - 30*24*3600*1000).toISOString().slice(0,10);
+  const globalLinea = document.getElementById('prodLinea').value || '';
+
+  const allLineas = [...new Set([...lineas, 'EMPACADOS', 'NUECES Y SEMILLAS'])].sort();
+  const lineaOptions = allLineas.map(l => `<option value="${l}"${l===globalLinea?' selected':''}>${l}</option>`).join('');
+
+  content.innerHTML = `
+    <div style="padding:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Línea *</div>
+          <select id="chartLineaFilt" onchange="applyProdChart()" style="background:var(--bg);border:1px solid var(--accent);color:var(--accent);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;font-weight:700">
+            <option value="">Seleccionar línea</option>
+            ${lineaOptions}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Desde</div>
+          <input type="date" id="chartDesde" value="${thirtyAgo}" onchange="applyProdChart()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Hasta</div>
+          <input type="date" id="chartHasta" value="${today}" onchange="applyProdChart()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);text-transform:uppercase">Vista</div>
+          <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden">
+            <button id="chartViewBar" onclick="window._chartView='bar';document.getElementById('chartViewBar').style.background='var(--accent)';document.getElementById('chartViewBar').style.color='#000';document.getElementById('chartViewLine').style.background='transparent';document.getElementById('chartViewLine').style.color='var(--muted)';applyProdChart()" style="padding:7px 14px;border:none;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;background:var(--accent);color:#000">BARRAS</button>
+            <button id="chartViewLine" onclick="window._chartView='line';document.getElementById('chartViewLine').style.background='var(--accent)';document.getElementById('chartViewLine').style.color='#000';document.getElementById('chartViewBar').style.background='transparent';document.getElementById('chartViewBar').style.color='var(--muted)';applyProdChart()" style="padding:7px 14px;border:none;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;background:transparent;color:var(--muted)">LÍNEA</button>
+          </div>
+        </div>
+      </div>
+      <div id="chartArea"><div style="padding:60px;text-align:center;color:var(--muted);font-size:13px">Selecciona una línea para ver el gráfico de cumplimiento</div></div>
+    </div>`;
+
+  window._chartView = window._chartView || 'bar';
+
+  // Load all production data
+  content.querySelector('#chartArea').innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Cargando datos...</div>';
+  const snapshot = await db.ref('kalos/produccion').once('value');
+  const data = snapshot.val() || {};
+  window._chartAllData = Object.values(data);
+
+  if (globalLinea) applyProdChart();
+}
+
+function applyProdChart() {
+  const lineaSel = document.getElementById('chartLineaFilt');
+  const desdeEl = document.getElementById('chartDesde');
+  const hastaEl = document.getElementById('chartHasta');
+  const area = document.getElementById('chartArea');
+  if (!area || !lineaSel) return;
+
+  const linea = lineaSel.value;
+  const desde = desdeEl ? desdeEl.value : '';
+  const hasta = hastaEl ? hastaEl.value : '';
+
+  if (!linea) {
+    area.innerHTML = '<div style="padding:60px;text-align:center;color:var(--muted)">Selecciona una línea para ver el gráfico</div>';
+    return;
+  }
+
+  const rows = (window._chartAllData || []).filter(r => {
+    if (!r.linea || r.linea.trim().toUpperCase() !== linea.trim().toUpperCase()) return false;
+    const rowDate = (r.fecha || '').slice(0,10);
+    if (desde && rowDate < desde) return false;
+    if (hasta && rowDate > hasta) return false;
+    return true;
+  });
+
+  if (!rows.length) {
+    area.innerHTML = '<div style="padding:60px;text-align:center;color:var(--muted)">No hay registros para la línea y rango seleccionados.</div>';
+    return;
+  }
+
+  // Group by date
+  const grouped = {};
+  const downtimeByDate = {};
+  rows.forEach(r => {
+    const d = (r.fecha || '').slice(0,10);
+    if (!grouped[d]) grouped[d] = 0;
+    grouped[d] += (r.productos||[]).reduce((s,p)=>s + getKgFromProductEntry(p),0);
+
+    if (!downtimeByDate[d]) downtimeByDate[d] = [];
+    const hrs = parseFloat(r.downtime_hrs || 0) || 0;
+    const razon = (r.downtime_razon || '').trim();
+    if (hrs > 0 || razon) {
+      downtimeByDate[d].push(`Downtime: ${hrs.toFixed(2)} hrs${razon ? ' — ' + razon : ''}`);
+    }
+  });
+
+  const sortedDates = Object.keys(grouped).sort();
+  const capacity = (SCHED_CONFIG[linea] && SCHED_CONFIG[linea].kg_dia) || (CAPACIDADES[linea] && CAPACIDADES[linea].kg_dia) || 0;
+  const vals = sortedDates.map(d => grouped[d]);
+  const maxVal = Math.max(...vals, capacity || 1);
+
+  const cntOk = vals.filter(v => capacity > 0 && v >= capacity).length;
+  const cntFail = vals.filter(v => capacity > 0 && v < capacity).length;
+  const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+
+  // Stats summary
+  const statsHtml = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Días registrados</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)">${sortedDates.length}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Promedio kg/día</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue)">${avg.toFixed(0)}</div>
+      </div>
+      ${capacity > 0 ? `
+      <div style="background:var(--surface);border:1px solid rgba(0,214,143,.25);border-radius:7px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">✅ Días cumplidos</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)">${cntOk}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid rgba(255,68,68,.2);border-radius:7px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">❌ Días no cumplidos</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red)">${cntFail}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 14px">
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Meta kg/día</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--orange)">${capacity.toFixed(0)}</div>
+      </div>` : ''}
+    </div>`;
+
+  // Build SVG chart
+  const W = 820, H = 240;
+  const M = {l:50,r:20,t:24,b:44};
+  const iW = W-M.l-M.r, iH = H-M.t-M.b;
+  const barW = Math.max(4, Math.min(36, (iW / sortedDates.length) - 3));
+  const xStep = iW / sortedDates.length;
+  const capY = capacity > 0 ? M.t + iH - (capacity/maxVal)*iH : null;
+
+  let svgContent = '';
+  // Y grid lines
+  [0,.25,.5,.75,1].forEach(frac => {
+    const y = M.t + iH*(1-frac);
+    const val = (maxVal*frac).toFixed(0);
+    svgContent += `<line x1="${M.l}" y1="${y}" x2="${W-M.r}" y2="${y}" stroke="rgba(42,48,69,0.7)" stroke-width="1"/>
+    <text x="${M.l-4}" y="${y+4}" font-size="9" fill="var(--muted)" text-anchor="end">${val}</text>`;
+  });
+
+  const view = window._chartView || 'bar';
+
+  if (view === 'bar') {
+    sortedDates.forEach((d, i) => {
+      const kg = grouped[d];
+      const x = M.l + i*xStep + (xStep-barW)/2;
+      const barH = (kg/maxVal)*iH;
+      const y = M.t+iH-barH;
+      const met = capacity > 0 && kg >= capacity;
+      const color = capacity === 0 ? 'var(--blue)' : met ? 'var(--green)' : kg/capacity >= 0.8 ? 'var(--yellow)' : 'var(--red)';
+      const pct = capacity > 0 ? Math.round((kg/capacity)*100) : null;
+      svgContent += `
+        <rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${color}" rx="2" opacity="0.85" cursor="pointer" onclick="showDowntimeForDate('${d}')"/>
+        ${pct !== null && barW > 20 ? `<text x="${x+barW/2}" y="${y-4}" font-size="9" fill="${color}" text-anchor="middle">${pct}%</text>` : ''}
+        <text x="${x+barW/2}" y="${H-M.b+14}" font-size="9" fill="var(--muted)" text-anchor="middle">${d.slice(5)}</text>`;
+    });
+  } else {
+    // Line chart
+    const pts = sortedDates.map((d,i)=>({
+      x: M.l + i*xStep + xStep/2,
+      y: M.t+iH-(grouped[d]/maxVal)*iH,
+      kg: grouped[d], date: d
+    }));
+    const path = pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+    svgContent += `<path d="${path}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round"/>`;
+    pts.forEach(p => {
+      const met = capacity > 0 && p.kg >= capacity;
+      const col = capacity === 0 ? 'var(--blue)' : met ? 'var(--green)' : 'var(--red)';
+      svgContent += `
+        <circle cx="${p.x}" cy="${p.y}" r="4" fill="${col}" stroke="var(--bg)" stroke-width="1.5" cursor="pointer" onclick="showDowntimeForDate('${p.date}')"/>
+        <text x="${p.x}" y="${p.y-8}" font-size="9" fill="${col}" text-anchor="middle">${p.kg.toFixed(0)}</text>
+        <text x="${p.x}" y="${H-M.b+14}" font-size="9" fill="var(--muted)" text-anchor="middle">${p.date.slice(5)}</text>`;
+    });
+  }
+
+  // Capacity line
+  if (capY !== null) {
+    svgContent += `
+      <line x1="${M.l}" y1="${capY}" x2="${W-M.r}" y2="${capY}" stroke="var(--orange)" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="${W-M.r-2}" y="${capY-5}" font-size="10" fill="var(--orange)" text-anchor="end">Meta ${capacity.toFixed(0)} kg</text>`;
+  }
+
+  const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px">
+    ${svgContent}
+    <text x="${W/2}" y="${H-4}" font-size="10" fill="var(--muted)" text-anchor="middle">Fecha (${sortedDates[0]} — ${sortedDates[sortedDates.length-1]})</text>
+    <text x="10" y="${M.t}" font-size="10" fill="var(--muted)">Kg</text>
+  </svg>`;
+
+  // Table
+  const tableRows = sortedDates.map(d => {
+    const kg = grouped[d];
+    const pct = capacity > 0 ? Math.round((kg/capacity)*100) : null;
+    const met = capacity > 0 && kg >= capacity;
+    const pctColor = pct === null ? 'var(--muted)' : met ? 'var(--green)' : pct >= 80 ? 'var(--yellow)' : 'var(--red)';
+    const hasDowntime = downtimeByDate[d] && downtimeByDate[d].length > 0;
+    const tooltip = hasDowntime ? downtimeByDate[d].join(' | ') : 'Sin downtime';
+    return `<tr onclick="showDowntimeForDate('${d}')" style="cursor:pointer" title="${tooltip}">
+      <td style="padding:6px 10px;font-family:var(--mono);font-size:11px">${d}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px">${kg.toFixed(1)}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px">${capacity > 0 ? capacity.toFixed(1) : '—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:${pctColor}">${pct !== null ? pct+'%' : '—'}</td>
+      <td style="padding:6px 10px"><div style="height:8px;background:var(--border);border-radius:4px;min-width:60px"><div style="height:100%;width:${Math.min(100,Math.round((kg/maxVal)*100))}%;background:${pct!==null && !met ? (pct>=80?'var(--yellow)':'var(--red)') : 'var(--green)'};border-radius:4px"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px">${linea} — Cumplimiento de capacidad</div>
+    ${statsHtml}
+    ${svg}
+    <div id="downtimeMessage" style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.25);border-radius:6px;padding:8px 10px;margin-bottom:10px;color:var(--muted);font-size:12px;min-height:40px">
+      Haz clic en una fila de fecha para ver downtime y motivo del supervisor.
+    </div>
+    <div style="overflow:auto;border-radius:7px;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--surface2)">
+          <th style="padding:7px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Fecha</th>
+          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Producido (kg)</th>
+          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Meta (kg)</th>
+          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Cumpl.</th>
+          <th style="padding:7px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Barra</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>`;
 }
 
 // ======= MODO LECTURA =======
@@ -1137,6 +1520,70 @@ function aplicarModoVista() {
   });
 }
 
+function getCurrentDayName() {
+  const dias = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+  return dias[new Date().getDay()];
+}
+
+function showDowntimeForDate(date) {
+  const rows = (window._chartAllData || []).filter(r => (r.fecha||'').slice(0,10) === date);
+  if (!rows.length) {
+    toast('No hay registros de esta fecha.');
+    return;
+  }
+  const info = rows.map(r => {
+    const hrs = parseFloat(r.downtime_hrs || 0) || 0;
+    const razon = (r.downtime_razon || '').trim();
+    let line = `Downtime: ${hrs.toFixed(2)} hrs`;
+    if (razon) line += ` — ${razon}`;
+    return line;
+  }).filter(Boolean);
+  const msg = info.length > 0 ? info.join(' · ') : 'No hay downtime registrado para esta fecha.';
+  const panel = document.getElementById('downtimeMessage');
+  if (panel) {
+    panel.textContent = `Fecha: ${date} — ${msg}`;
+    panel.style.color = '#ffffff';
+    if (info.length > 0) {
+      panel.style.background = 'rgba(255, 159, 64, 0.25)';
+      panel.style.border = '1px solid rgba(255, 159, 64, 0.4)';
+      panel.style.boxShadow = '0 0 8px rgba(255, 159, 64, 0.25)';
+    } else {
+      panel.style.background = 'rgba(75, 85, 99, 0.35)';
+      panel.style.border = '1px solid rgba(75, 85, 99, 0.5)';
+      panel.style.boxShadow = 'none';
+    }
+    panel.style.borderRadius = '8px';
+    panel.style.padding = '8px 10px';
+    panel.style.fontWeight = '500';
+    panel.style.fontSize = '0.9rem';
+    panel.style.marginTop = '6px';
+    return;
+  }
+  toast(`Fecha: ${date} — ${msg}`);
+}
+
+function setProdDayToToday() {
+  const dia = getCurrentDayName();
+  const prodDiaEl = document.getElementById('prodDia');
+  if (prodDiaEl) {
+    prodDiaEl.value = dia;
+  }
+  const histDiaEl = document.getElementById('histProdDiaFilt');
+  if (histDiaEl) {
+    histDiaEl.value = dia;
+  }
+}
+
+function setHistDateRangeDefaults() {
+  const hoy = new Date();
+  const todayStr = hoy.toISOString().slice(0,10);
+  const thirtyAgo = new Date(hoy.getTime() - 30*24*3600*1000).toISOString().slice(0,10);
+  const desdeEl = document.getElementById('histProdDesde');
+  const hastaEl = document.getElementById('histProdHasta');
+  if (desdeEl && !desdeEl.value) desdeEl.value = thirtyAgo;
+  if (hastaEl && !hastaEl.value) hastaEl.value = todayStr;
+}
+
 function init(){
   initFirebase();
   [document.getElementById('lineaFilter'),document.getElementById('lineaFilterPlan'),document.getElementById('ubicLineaFilter')].forEach(sel=>{
@@ -1150,10 +1597,12 @@ function init(){
     prodLinea.innerHTML = '<option value="">Seleccionar línea</option>' + allLineas.map(l => `<option value="${l}">${l}</option>`).join('');
   }
 
+  setProdDayToToday();
   setProdView('programado');
 
   const now=new Date();
-  document.getElementById('dateBadge').textContent=now.toLocaleDateString('es-MX',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+  document.getElementById('dateBadge').textContent = now.toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'2-digit'}).replace(/\bde\b/g,'de');
+  // Formato: Jueves 02 de abril de 2026
   const day=now.getDay();
   const mon=new Date(now); mon.setDate(now.getDate()-(day===0?6:day-1));
   const sat=new Date(mon); sat.setDate(mon.getDate()+5);
@@ -1223,6 +1672,20 @@ function getAllProducts() {
     .map(p => edited[p.SKU] ? edited[p.SKU] : p);
   const newOnes = customProducts.filter(p => !CATALOG.some(c => c.SKU === p.SKU) && !deleted.includes(p.SKU));
   return [...base, ...newOnes];
+}
+
+function getKgFromProductEntry(p) {
+  if (!p) return 0;
+  const kgReported = parseFloat(p.producido_kg || 0) || 0;
+  if (kgReported > 0) return kgReported;
+
+  const pzsReported = parseFloat(p.producido_pzs || 0) || 0;
+  if (pzsReported <= 0) return 0;
+
+  const sku = p.sku || p.SKU || '';
+  const prod = getAllProducts().find(item => item.SKU && item.SKU.toUpperCase() === sku.toUpperCase());
+  const kgPorPieza = prod && parseFloat(prod.KG_POR_PIEZA) ? parseFloat(prod.KG_POR_PIEZA) : 10;
+  return pzsReported * kgPorPieza;
 }
 
 function resolvePedidoSku(input) {
@@ -2976,6 +3439,11 @@ function addAIMessage(text, type, id='') {
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
 
 function renderProduccion() {
+  if (prodViewMode === 'libre') {
+    renderProduccionLibre();
+    return;
+  }
+
   const linea = document.getElementById('prodLinea').value;
   const dia = document.getElementById('prodDia').value;
   const content = document.getElementById('prodContent');
@@ -2989,7 +3457,7 @@ function renderProduccion() {
   const {schedule} = buildSchedule();
   const dayData = schedule[dayKey] && schedule[dayKey][linea];
   if (!dayData) {
-    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay producción programada para esta línea en este día</div>';
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay producción programada para esta línea en este día. Prueba otro día o utiliza Captura libre para registro real.</div>';
     return;
   }
 
@@ -3056,6 +3524,121 @@ function renderProduccion() {
   content.innerHTML = html;
 }
 
+function renderProduccionLibre() {
+  const linea = document.getElementById('prodLinea').value;
+  const content = document.getElementById('prodContent');
+  if (!linea) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Selecciona línea para captura libre</div>';
+    return;
+  }
+
+  const allowedProducts = getAllProducts().filter(p => p.LINEA === linea);
+  if (!allowedProducts.length) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay productos configurados para esta línea. Revisa el catálogo o selecciona otra línea.</div>';
+    return;
+  }
+  const options = allowedProducts.map(p => `<option value="${p.SKU}">${p.PRODUCTO} (${p.SKU})</option>`).join('');
+
+  content.innerHTML = `
+    <div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)">${linea} — Captura libre</div>
+          <div style="font-size:11px;color:var(--muted)">Registra producción real libre por producto</div>
+        </div>
+        <button onclick="guardarProduccion()" class="btn btn-primary" style="font-size:12px;padding:6px 12px">💾 GUARDAR PRODUCCIÓN</button>
+      </div>
+
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="libreProdSelect" style="flex:1;min-width:220px;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--sans);background:var(--surface);color:var(--text)">
+          <option value="">Selecciona producto</option>
+          ${options}
+        </select>
+        <input id="libreProdPzs" type="number" min="0" step="1" placeholder="Pzs" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--mono)">
+        <input id="libreProdKg" type="number" min="0" step="0.1" placeholder="KG" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--mono)">
+        <button onclick="agregarLineaLibre()" class="btn btn-outline" style="font-size:12px;padding:8px 12px">➕ Agregar</button>
+      </div>
+      <div id="libreProdTable" style="margin-top:12px"></div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:10px;font-size:11px;color:var(--muted)">
+        Después de guardar, el registro va a <strong>kalos/produccion</strong> y no modifica inventario.
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:8px;color:var(--orange)">TIEMPO MUERTO / DOWNTIME</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="number" id="downtime-hrs" min="0" step="0.25" placeholder="0.0" style="width:80px;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:4px;padding:4px">
+          <span style="font-size:11px;color:var(--muted);align-self:center">horas</span>
+        </div>
+        <textarea id="downtime-razon" placeholder="Razón del downtime (ej: falla máquina, cambio línea, etc.)" style="width:100%;height:60px;font-family:var(--sans);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:6px;resize:none"></textarea>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:8px;color:var(--blue)">NOTAS ADICIONALES</div>
+        <textarea id="prod-notas" placeholder="Observaciones sobre la producción (opcional)" style="width:100%;height:40px;font-family:var(--sans);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:6px;resize:none"></textarea>
+      </div>
+    </div>
+  `;
+
+  window.libreProductionRows = [];
+  renderLibreTable();
+}
+
+function agregarLineaLibre() {
+  const linea = document.getElementById('prodLinea').value;
+  const sku = document.getElementById('libreProdSelect').value;
+  const pzs = parseFloat(document.getElementById('libreProdPzs').value) || 0;
+  const kg = parseFloat(document.getElementById('libreProdKg').value) || 0;
+  if (!linea || !sku || (pzs<=0 && kg<=0)) {
+    toast('Selecciona producto e ingresa al menos pzs o kg', 'warn');
+    return;
+  }
+
+  const prod = getAllProducts().find(p => p.SKU === sku);
+  if (!prod) return;
+
+  const now = new Date().toISOString();
+  window.libreProductionRows.push({sku, nombre: prod.PRODUCTO, producido_pzs: pzs, producido_kg: kg, registro: now});
+  document.getElementById('libreProdSelect').value = '';
+  document.getElementById('libreProdPzs').value = '';
+  document.getElementById('libreProdKg').value = '';
+  renderLibreTable();
+}
+
+function renderLibreTable() {
+  const content = document.getElementById('libreProdTable');
+  if (!content) return;
+  if (!window.libreProductionRows || !window.libreProductionRows.length) {
+    content.innerHTML = '<div style="color:var(--muted);font-size:12px">No hay productos agregados.</div>';
+    return;
+  }
+
+  content.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:6px;text-align:left">Producto</th>
+        <th style="padding:6px;text-align:right">Pzs</th>
+        <th style="padding:6px;text-align:right">Kg</th>
+        <th style="padding:6px;text-align:left">Registro</th>
+        <th style="padding:6px;text-align:center">Quitar</th>
+      </tr></thead>
+      <tbody>${window.libreProductionRows.map((row, idx) => `
+        <tr>
+          <td style="padding:6px">${row.nombre} (${row.sku})</td>
+          <td style="padding:6px;text-align:right">${row.producido_pzs}</td>
+          <td style="padding:6px;text-align:right">${row.producido_kg}</td>
+          <td style="padding:6px;text-align:left">${new Date(row.registro).toLocaleString('es-MX')}</td>
+          <td style="padding:6px;text-align:center"><button onclick="eliminarLineaLibre(${idx})" style="border:none;background:none;color:var(--red);cursor:pointer">✕</button></td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+}
+
+function eliminarLineaLibre(idx) {
+  window.libreProductionRows.splice(idx,1);
+  renderLibreTable();
+}
+
 function guardarProduccion() {
   // Esta función registra producción/downtime en su propia rama de Firebase
   // no debe modificar ni recalcular inventario para evitar impactos de stock
@@ -3063,27 +3646,49 @@ function guardarProduccion() {
   const dia = document.getElementById('prodDia').value;
   if (!linea || !dia) return;
 
-  const {schedule} = buildSchedule();
-  const dayData = schedule[dia] && schedule[dia][linea];
-  if (!dayData) return;
-
-  const produccion = {
+  let produccion = {
     fecha: new Date().toISOString(),
     linea,
     dia,
-    productos: dayData.assignments.map((a, idx) => ({
+    tipo: prodViewMode || 'programado',
+    productos: [],
+    capacidad_kg: null,
+    downtime_hrs: parseFloat(document.getElementById('downtime-hrs')?.value) || 0,
+    downtime_razon: document.getElementById('downtime-razon')?.value.trim() || '',
+    notas: document.getElementById('prod-notas')?.value.trim() || ''
+  };
+
+  if (prodViewMode === 'libre') {
+    const rows = window.libreProductionRows || [];
+    if (!rows.length) {
+      toast('Agrega al menos un producto en captura libre', 'warn');
+      return;
+    }
+    produccion.productos = rows.map(r => ({
+      sku: r.sku,
+      nombre: r.nombre,
+      producido_pzs: r.producido_pzs,
+      producido_kg: r.producido_kg,
+      registro: r.registro || new Date().toISOString()
+    }));
+    produccion.capacidad_kg = null;
+  } else {
+    const {schedule} = buildSchedule();
+    const dayData = schedule[dia.toUpperCase()] && schedule[dia.toUpperCase()][linea];
+    if (!dayData) {
+      toast('No hay datos de programación para esta línea/día', 'warn');
+      return;
+    }
+    produccion.productos = dayData.assignments.map((a, idx) => ({
       sku: a.sku,
       nombre: a.nombre,
       programado_pzs: a.pzs,
       programado_kg: a.kg,
-      producido_pzs: parseFloat(document.getElementById(`prod-pzs-${idx}`).value) || 0,
-      producido_kg: parseFloat(document.getElementById(`prod-kg-${idx}`).value) || 0
-    })),
-    capacidad_kg: dayData.kgDia,
-    downtime_hrs: parseFloat(document.getElementById('downtime-hrs').value) || 0,
-    downtime_razon: document.getElementById('downtime-razon').value.trim(),
-    notas: document.getElementById('prod-notas').value.trim()
-  };
+      producido_pzs: parseFloat(document.getElementById(`prod-pzs-${idx}`)?.value) || 0,
+      producido_kg: parseFloat(document.getElementById(`prod-kg-${idx}`)?.value) || 0
+    }));
+    produccion.capacidad_kg = dayData.kgDia;
+  }
 
   // Validar que se haya registrado algo
   const totalProducido = produccion.productos.reduce((s, p) => s + p.producido_kg, 0);
@@ -3100,14 +3705,26 @@ function guardarProduccion() {
 
   db.ref('kalos/produccion').push(produccion).then(() => {
     toast('✓ Producción guardada exitosamente', 'success');
-    // Limpiar campos
-    produccion.productos.forEach((_, idx) => {
-      document.getElementById(`prod-pzs-${idx}`).value = '';
-      document.getElementById(`prod-kg-${idx}`).value = '';
-    });
-    document.getElementById('downtime-hrs').value = '';
-    document.getElementById('downtime-razon').value = '';
-    document.getElementById('prod-notas').value = '';
+    // Cambiar a registro histórico y refrescar
+    setProdView('historial');
+    // Limpiar campos de captura en pantalla
+    if (prodViewMode === 'libre') {
+      window.libreProductionRows = [];
+      renderLibreTable();
+      if (document.getElementById('downtime-hrs')) document.getElementById('downtime-hrs').value = '';
+      if (document.getElementById('downtime-razon')) document.getElementById('downtime-razon').value = '';
+      if (document.getElementById('prod-notas')) document.getElementById('prod-notas').value = '';
+    } else {
+      produccion.productos.forEach((_, idx) => {
+        const inpP = document.getElementById(`prod-pzs-${idx}`);
+        const inpK = document.getElementById(`prod-kg-${idx}`);
+        if (inpP) inpP.value = '';
+        if (inpK) inpK.value = '';
+      });
+      if (document.getElementById('downtime-hrs')) document.getElementById('downtime-hrs').value = '';
+      if (document.getElementById('downtime-razon')) document.getElementById('downtime-razon').value = '';
+      if (document.getElementById('prod-notas')) document.getElementById('prod-notas').value = '';
+    }
   }).catch(err => {
     console.error(err);
     toast('Error guardando producción: ' + err.message, 'warn');
