@@ -173,9 +173,10 @@
   </div>
 </div>
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('conteo',this)">📦 CONTEO</div>
+  <div class="tab" onclick="switchTab('conteo',this)">📦 CONTEO</div>
   <div class="tab" onclick="switchTab('plan',this)">📊 PLAN DE PRODUCCIÓN</div>
   <div class="tab" onclick="switchTab('capacidad',this)">⚙️ CARGA POR LÍNEA</div>
+  <div class="tab" onclick="switchTab('produccion',this)">🏭 PRODUCCIÓN</div>
   <div class="tab" onclick="switchTab('pedidos',this)">📋 CARGAR PEDIDOS</div>
   <div class="tab" onclick="switchTab('clientes',this)">👥 CLIENTES</div>
   <div class="tab" onclick="switchTab('historial',this)">📈 HISTORIAL</div>
@@ -337,6 +338,39 @@
     </button>
   </div>
   <div id="capacidadGrid"></div>
+</div>
+
+<!-- PRODUCCIÓN -->
+<div class="panel" id="tab-produccion">
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <button id="prodViewProgramadoBtn" onclick="setProdView('programado')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Programado</button>
+    <button id="prodViewHistBtn" onclick="setProdView('historial')" style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;cursor:pointer">Registros históricos</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <div>
+      <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">LÍNEA</label>
+      <select id="prodLinea" onchange="prodViewMode==='programado'?renderProduccion():renderProduccionHistorial()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+        <option value="">Seleccionar línea</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">DÍA</label>
+      <select id="prodDia" onchange="prodViewMode==='programado'?renderProduccion():renderProduccionHistorial()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
+        <option value="LUNES">Lunes</option>
+        <option value="MARTES">Martes</option>
+        <option value="MIÉRCOLES">Miércoles</option>
+        <option value="JUEVES">Jueves</option>
+        <option value="VIERNES">Viernes</option>
+        <option value="SÁBADO">Sábado</option>
+        <option value="DOMINGO">Domingo</option>
+      </select>
+    </div>
+  </div>
+  <div id="prodContent">
+    <div style="text-align:center;color:var(--muted);padding:60px;font-size:13px">
+      Selecciona una línea y día para ver los productos programados
+    </div>
+  </div>
 </div>
 
 <!-- PEDIDOS -->
@@ -866,7 +900,11 @@ function renderCapacidad(){
   const lineas = [...new Set(all.map(p=>p.LINEA).filter(Boolean))].sort();
 
   const cards = lineas.map(linea => {
-    const cap = CAPACIDADES[linea];
+    let cap = CAPACIDADES[linea];
+    const isCapUnknown = !cap || cap.kg_dia === null;
+    if (isCapUnknown) {
+      cap = {kg_dia: 0, kg_dia_max: 0, notas: 'Capacidad desconocida'};
+    }
     const prods = all.filter(p=>p.LINEA===linea && (p.A_PRODUCIR>0 || p.TOTAL_PENDIENTE>0 || p.INV_NETO<0));
     const prodsSorted = prods.sort((a,b)=>{
       // Sort: deficit first, then by pending volume
@@ -890,26 +928,15 @@ function renderCapacidad(){
     };
     const color = lineaColors[linea] || 'var(--accent)';
 
-    if (!cap || cap.kg_dia === null) {
-      const pendTotal = prods.reduce((s,p)=>s+p.TOTAL_PENDIENTE,0);
-      return `<div class="cap-card">
-        <div class="cap-card-header">
-          <div class="cap-linea" style="color:${color}">${linea}</div>
-          <div class="cap-notas">${cap ? cap.notas : 'Sin capacidad definida'}</div>
-        </div>
-        <div class="cap-unknown">⚠ Capacidad no definida — ${prods.length} productos con producción pendiente · ${fmt(pendTotal)} pzs totales pendientes</div>
-      </div>`;
-    }
+    const diasMin = isCapUnknown ? 0 : (cap.kg_dia > 0 ? totalKgNeeded / cap.kg_dia : 0);
+    const diasMax = isCapUnknown ? 0 : (cap.kg_dia_max > 0 ? totalKgNeeded / cap.kg_dia_max : diasMin);
+    const pct = isCapUnknown ? 0 : Math.min(100, (diasMin / 6) * 100); // vs semana de 6 días
+    const barColor = isCapUnknown ? 'var(--muted)' : (pct > 100 ? 'var(--red)' : pct > 75 ? 'var(--orange)' : pct > 40 ? 'var(--yellow)' : 'var(--green)');
 
-    const diasMin = cap.kg_dia > 0 ? totalKgNeeded / cap.kg_dia : 0;
-    const diasMax = cap.kg_dia_max > 0 ? totalKgNeeded / cap.kg_dia_max : diasMin;
-    const pct = Math.min(100, (diasMin / 6) * 100); // vs semana de 6 días
-    const barColor = pct > 100 ? 'var(--red)' : pct > 75 ? 'var(--orange)' : pct > 40 ? 'var(--yellow)' : 'var(--green)';
-
-    const hasDual = cap.kg_dia !== cap.kg_dia_max;
-    const diasLabel = hasDual
-      ? `${diasMax.toFixed(1)} – ${diasMin.toFixed(1)} días`
-      : `${diasMin.toFixed(1)} días`;
+    const hasDual = !isCapUnknown && cap.kg_dia !== cap.kg_dia_max;
+    const diasLabel = isCapUnknown
+      ? 'Desconocido'
+      : (hasDual ? `${diasMax.toFixed(1)} – ${diasMin.toFixed(1)} días` : `${diasMin.toFixed(1)} días`);
 
     const prodRows = prodsSorted.map(p=>{
       const u = urg(p);
@@ -929,6 +956,19 @@ function renderCapacidad(){
         <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:11px;font-weight:700;color:${kgPend>0?'var(--red)':'var(--green)'};white-space:nowrap">${kgPend>0?fmt(kgPend)+' kg':'✓'}</td>
       </tr>`;
     }).join('');
+
+    const empacadosSummary = (linea==='EMPACADOS' && prods.length>0)
+      ? (() => {
+          const totalPzsPend = prods.reduce((s,p)=>s + (p.TOTAL_PENDIENTE||0),0);
+          const totalKgPend = prods.reduce((s,p)=>s + Math.round((p.TOTAL_PENDIENTE||0) * (p.KG_POR_PIEZA||10)),0);
+          const topPend = prodsSorted.filter(p=>p.TOTAL_PENDIENTE>0).slice(0,5).map(p=>`${p.PRODUCTO} (${fmt(p.TOTAL_PENDIENTE)} pzs, ${fmt(Math.round(p.TOTAL_PENDIENTE*(p.KG_POR_PIEZA||10)))} kg)`).join('<br>');
+          return `<div style="background:rgba(107,117,153,.08);border:1px solid rgba(107,117,153,.35);border-radius:6px;padding:10px;margin:10px 0;font-size:12px;color:var(--text)">
+            <strong style="color:var(--accent);font-size:12px">Desglose EMPACADOS pendientes:</strong><br>
+            Total pendientes: <strong>${fmt(totalPzsPend)} pzs</strong> · <strong>${fmt(totalKgPend)} kg</strong><br>
+            ${topPend?`Top 5: <span style="font-size:11px;color:var(--muted)">${topPend}</span>`:'Sin pendientes'}
+          </div>`;
+        })()
+      : '';
 
     const prodTable = prodsSorted.length > 0 ? `
       <div class="cap-prods" style="padding:0;overflow:auto">
@@ -956,7 +996,7 @@ function renderCapacidad(){
         <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
           <div style="text-align:center">
             <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Capacidad/día</div>
-            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${color}">${hasDual?fmt(cap.kg_dia)+'–'+fmt(cap.kg_dia_max):fmt(cap.kg_dia)} kg</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${color}">${isCapUnknown ? 'Desconocida' : (hasDual?fmt(cap.kg_dia)+'–'+fmt(cap.kg_dia_max)+' kg':fmt(cap.kg_dia)+' kg')}</div>
           </div>
           <div style="text-align:center">
             <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">🔴 Déficit a entregar</div>
@@ -987,6 +1027,75 @@ function renderCapacidad(){
 function goToPlan(){switchTab('plan',document.querySelectorAll('.tab')[1]);}
 
 const lineas=[...new Set(CATALOG.map(p=>p.LINEA).filter(Boolean))].sort();
+let prodViewMode = 'programado';
+
+function setProdView(mode) {
+  prodViewMode = mode;
+  const btnProgramado = document.getElementById('prodViewProgramadoBtn');
+  const btnHistorial = document.getElementById('prodViewHistBtn');
+  if (btnProgramado && btnHistorial) {
+    btnProgramado.style.background = mode==='programado' ? 'var(--accent)' : 'var(--surface)';
+    btnProgramado.style.color = mode==='programado' ? '#000' : 'var(--text)';
+    btnHistorial.style.background = mode==='historial' ? 'var(--accent)' : 'var(--surface)';
+    btnHistorial.style.color = mode==='historial' ? '#000' : 'var(--text)';
+  }
+
+  if (mode === 'programado') renderProduccion();
+  else renderProduccionHistorial();
+}
+
+async function renderProduccionHistorial() {
+  const linea = document.getElementById('prodLinea').value;
+  const dia = document.getElementById('prodDia').value;
+  const content = document.getElementById('prodContent');
+
+  if (!db) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Sin conexión a Firebase</div>';
+    return;
+  }
+
+  content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Cargando historial...</div>';
+
+  const snapshot = await db.ref('kalos/produccion').orderByChild('fecha').once('value');
+  const data = snapshot.val() || {};
+  const rows = Object.values(data)
+    .map(r => ({...r, fecha: r.fecha || '', timestamp: new Date(r.fecha).getTime()}))
+    .sort((a,b)=>b.timestamp-a.timestamp);
+
+  const filtered = rows.filter(r => {
+    if (linea && r.linea !== linea) return false;
+    if (dia && prodViewMode === 'historial' && r.dia && dia.toUpperCase() !== r.dia.toUpperCase()) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay registros de producción para la selección</div>';
+    return;
+  }
+
+  const items = filtered.map(r => {
+    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('es-MX') : r.fecha;
+    const products = (r.productos||[]).map(p =>
+      `<tr><td style="padding:5px 8px">${p.nombre} (${p.sku})</td><td style="padding:5px 8px;text-align:right">${p.producido_pzs||0}</td><td style="padding:5px 8px;text-align:right">${p.producido_kg||0}</td></tr>`
+    ).join('');
+
+    return `<div style="border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:10px;padding:10px">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--accent)">${r.linea} · ${r.dia}</div>
+        <div style="font-size:11px;color:var(--muted)">${ts}</div>
+      </div>
+      <div style="font-size:11px;margin-bottom:6px">Downtime: ${r.downtime_hrs || 0} hrs · ${r.downtime_razon || '—'}</div>
+      <div style="font-size:11px;margin-bottom:6px">Notas: ${r.notas || '—'}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:1px solid var(--border)"><th style="padding:5px;text-align:left">Producto</th><th style="padding:5px;text-align:right">Pzs</th><th style="padding:5px;text-align:right">Kg</th></tr></thead>
+        <tbody>${products}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `<div style="padding:10px">${items}</div>`;
+}
+
 // ======= MODO LECTURA =======
 const MODO_VISTA = new URLSearchParams(window.location.search).get('modo') === 'vista';
 
@@ -1033,6 +1142,16 @@ function init(){
   [document.getElementById('lineaFilter'),document.getElementById('lineaFilterPlan'),document.getElementById('ubicLineaFilter')].forEach(sel=>{
     lineas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;sel.appendChild(o);});
   });
+
+  // PRODUCCIÓN - desplegar todas las líneas incluyendo EMPACADOS/NUECES Y SEMILLAS
+  const prodLinea = document.getElementById('prodLinea');
+  if (prodLinea) {
+    const allLineas = [...new Set([...lineas, 'EMPACADOS', 'NUECES Y SEMILLAS'])].sort();
+    prodLinea.innerHTML = '<option value="">Seleccionar línea</option>' + allLineas.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+
+  setProdView('programado');
+
   const now=new Date();
   document.getElementById('dateBadge').textContent=now.toLocaleDateString('es-MX',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
   const day=now.getDay();
@@ -1041,6 +1160,7 @@ function init(){
   document.getElementById('weekBadge').textContent='Sem: '+mon.toLocaleDateString('es-MX',{day:'numeric',month:'short'})+' – '+sat.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
   filterProds();
   cargarEstado();
+  renderProduccion();
 
   // Monitor conexión Firebase
   if (db) {
@@ -1103,6 +1223,44 @@ function getAllProducts() {
     .map(p => edited[p.SKU] ? edited[p.SKU] : p);
   const newOnes = customProducts.filter(p => !CATALOG.some(c => c.SKU === p.SKU) && !deleted.includes(p.SKU));
   return [...base, ...newOnes];
+}
+
+function resolvePedidoSku(input) {
+  if (!input) return null;
+  const all = getAllProducts();
+  const normalized = input.toString().trim().replace(/['"]/g, '').toUpperCase().replace(/\s+/g, ' ');
+  if (!normalized) return null;
+
+  // 1) Búsqueda exacta por SKU
+  let p = all.find(item => item.SKU && item.SKU.toUpperCase() === normalized);
+  if (p) return p.SKU;
+
+  // 2) Búsqueda exacta por nombre de producto completo
+  p = all.find(item => item.PRODUCTO && item.PRODUCTO.toUpperCase() === normalized);
+  if (p) return p.SKU;
+
+  // 3) Búsqueda parcial de texto en nombre de producto
+  p = all.find(item => item.PRODUCTO && item.PRODUCTO.toUpperCase().includes(normalized));
+  if (p) return p.SKU;
+
+  // 4) Nombre de producto al revés (normalizado partes de la descripción)
+  p = all.find(item => normalized.includes(item.PRODUCTO && item.PRODUCTO.toUpperCase()));
+  if (p) return p.SKU;
+
+  // 5) Patrones de empaque típicos como "10 X 1 KG", "20 X 450 GR"
+  const empaquetado = normalized.replace(/×/g, 'X').replace(/\s*X\s*/g, ' X ').replace(/\s+/g, ' ').trim();
+  p = all.find(item => item.PRODUCTO && item.PRODUCTO.toUpperCase().includes(empaquetado));
+  if (p) return p.SKU;
+
+  // 6) Busco un fragmento numérico/masa (e.g. "10 X 1 KG")
+  const match = empaquetado.match(/(\d+\s*X\s*\d+(?:[.,]?\d*)\s*(KG|GR|G))/i);
+  if (match) {
+    const chunk = match[1].replace(/\s+/g, ' ').toUpperCase();
+    p = all.find(item => item.PRODUCTO && item.PRODUCTO.toUpperCase().includes(chunk));
+    if (p) return p.SKU;
+  }
+
+  return null;
 }
 
 function openModal(sku) {
@@ -1826,20 +1984,51 @@ function processCSV(file){
     const ci=hdrs.findIndex(h=>h==='codigo'||h==='código');
     const pi=hdrs.findIndex(h=>h==='pendiente');
     if(ci<0||pi<0){toast('No se encontraron columnas Codigo/Pendiente','warn');return;}
-    const np={};let cnt=0;
+
+    const np={};
+    let cnt=0;
+    const allProds=getAllProducts();
+    const mappedEntries=[];
+    const unknownCodes=[];
+
     for(let i=1;i<lines.length;i++){
       if(!lines[i].trim())continue;
       const cols=lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
-      const sku=cols[ci].trim();
+      const rawCode=(cols[ci]||'').trim();
+      if(!rawCode) continue;
       const pend=parseFloat(cols[pi])||0;
-      if(sku){np[sku]=(np[sku]||0)+pend;cnt++;}
+      cnt++;
+
+      const resolvedSku = resolvePedidoSku(rawCode);
+      const key = resolvedSku || rawCode;
+
+      if(resolvedSku && resolvedSku !== rawCode){
+        mappedEntries.push(`${rawCode} → ${resolvedSku}`);
+      }
+      if(!resolvedSku){
+        unknownCodes.push(rawCode);
+      }
+
+      np[key] = (np[key]||0) + pend;
     }
+
     pendingOrders=np;
     guardarEstado();
-    const allProds=getAllProducts();
+
     const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
     const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
-    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo (otros productos): ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
+
+    let extraMsg='';
+    if(mappedEntries.length){
+      extraMsg += `<br><span style="color:var(--blue);font-size:12px">Se resolvieron ${mappedEntries.length} códigos desde descripción a SKU: ${mappedEntries.slice(0,5).join(', ')}${mappedEntries.length>5?'...':''}</span>`;
+    }
+    if(unknownCodes.length){
+      const uniqueUnknown=[...new Set(unknownCodes)];
+      extraMsg += `<br><span style="color:var(--muted);font-size:12px">No se pudo resolver ${uniqueUnknown.length} códigos: ${uniqueUnknown.slice(0,5).join(', ')}${uniqueUnknown.length>5?'...':''}</span>`;
+    }
+
+    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo (otros productos): ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}${extraMsg}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
+
     toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
   };
   r.readAsText(file,'latin1');
@@ -2785,6 +2974,145 @@ function addAIMessage(text, type, id='') {
 }
 
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.className='toast',3000);}
+
+function renderProduccion() {
+  const linea = document.getElementById('prodLinea').value;
+  const dia = document.getElementById('prodDia').value;
+  const content = document.getElementById('prodContent');
+
+  if (!linea || !dia) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Selecciona línea y día para ver productos programados</div>';
+    return;
+  }
+
+  const dayKey = dia.toUpperCase();
+  const {schedule} = buildSchedule();
+  const dayData = schedule[dayKey] && schedule[dayKey][linea];
+  if (!dayData) {
+    content.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No hay producción programada para esta línea en este día</div>';
+    return;
+  }
+
+  const {assignments, kgDia, kgDiaFull, arranque, horasEfectivas} = dayData;
+  const arranqueMin = Math.round(arranque * 60);
+
+  const html = `
+    <div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)">${linea} — ${dia}</div>
+          <div style="font-size:11px;color:var(--muted)">Capacidad: ${fmt(kgDia)} kg (${horasEfectivas.toFixed(1)}h efectivas, ${arranqueMin}min arranque)</div>
+        </div>
+        <button onclick="guardarProduccion()" class="btn btn-primary" style="font-size:12px;padding:6px 12px">💾 GUARDAR PRODUCCIÓN</button>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
+              <th style="padding:8px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Producto</th>
+              <th style="padding:8px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">SKU</th>
+              <th style="padding:8px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Programado Pzs</th>
+              <th style="padding:8px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Programado KG</th>
+              <th style="padding:8px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase">Producido Pzs</th>
+              <th style="padding:8px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase">Producido KG</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${assignments.map((a, idx) => `
+              <tr style="border-bottom:1px solid rgba(42,48,69,.4)">
+                <td style="padding:8px;font-size:11px;max-width:150px">${a.nombre}</td>
+                <td style="padding:8px;font-family:var(--mono);font-size:10px;color:var(--muted)">${a.sku}</td>
+                <td style="padding:8px;text-align:right;font-family:var(--mono);font-size:12px">${fmt(a.pzs)}</td>
+                <td style="padding:8px;text-align:right;font-family:var(--mono);font-size:12px">${fmt(a.kg)}</td>
+                <td style="padding:8px;text-align:right">
+                  <input type="number" id="prod-pzs-${idx}" min="0" step="1" style="width:60px;text-align:right;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:4px;padding:2px" placeholder="0">
+                </td>
+                <td style="padding:8px;text-align:right">
+                  <input type="number" id="prod-kg-${idx}" min="0" step="0.1" style="width:60px;text-align:right;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:4px;padding:2px" placeholder="0.0">
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:8px;color:var(--orange)">TIEMPO MUERTO / DOWNTIME</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="number" id="downtime-hrs" min="0" step="0.25" placeholder="0.0" style="width:80px;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:4px;padding:4px">
+          <span style="font-size:11px;color:var(--muted);align-self:center">horas</span>
+        </div>
+        <textarea id="downtime-razon" placeholder="Razón del downtime (ej: falla máquina, cambio línea, etc.)" style="width:100%;height:60px;font-family:var(--sans);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:6px;resize:none"></textarea>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:8px;color:var(--blue)">NOTAS ADICIONALES</div>
+        <textarea id="prod-notas" placeholder="Observaciones sobre la producción (opcional)" style="width:100%;height:40px;font-family:var(--sans);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:6px;resize:none"></textarea>
+      </div>
+    </div>
+  `;
+
+  content.innerHTML = html;
+}
+
+function guardarProduccion() {
+  // Esta función registra producción/downtime en su propia rama de Firebase
+  // no debe modificar ni recalcular inventario para evitar impactos de stock
+  const linea = document.getElementById('prodLinea').value;
+  const dia = document.getElementById('prodDia').value;
+  if (!linea || !dia) return;
+
+  const {schedule} = buildSchedule();
+  const dayData = schedule[dia] && schedule[dia][linea];
+  if (!dayData) return;
+
+  const produccion = {
+    fecha: new Date().toISOString(),
+    linea,
+    dia,
+    productos: dayData.assignments.map((a, idx) => ({
+      sku: a.sku,
+      nombre: a.nombre,
+      programado_pzs: a.pzs,
+      programado_kg: a.kg,
+      producido_pzs: parseFloat(document.getElementById(`prod-pzs-${idx}`).value) || 0,
+      producido_kg: parseFloat(document.getElementById(`prod-kg-${idx}`).value) || 0
+    })),
+    capacidad_kg: dayData.kgDia,
+    downtime_hrs: parseFloat(document.getElementById('downtime-hrs').value) || 0,
+    downtime_razon: document.getElementById('downtime-razon').value.trim(),
+    notas: document.getElementById('prod-notas').value.trim()
+  };
+
+  // Validar que se haya registrado algo
+  const totalProducido = produccion.productos.reduce((s, p) => s + p.producido_kg, 0);
+  if (totalProducido === 0 && produccion.downtime_hrs === 0) {
+    toast('Registra producción o downtime antes de guardar', 'warn');
+    return;
+  }
+
+  // Guardar en Firebase
+  if (!db) {
+    toast('Error: Firebase no conectado', 'warn');
+    return;
+  }
+
+  db.ref('kalos/produccion').push(produccion).then(() => {
+    toast('✓ Producción guardada exitosamente', 'success');
+    // Limpiar campos
+    produccion.productos.forEach((_, idx) => {
+      document.getElementById(`prod-pzs-${idx}`).value = '';
+      document.getElementById(`prod-kg-${idx}`).value = '';
+    });
+    document.getElementById('downtime-hrs').value = '';
+    document.getElementById('downtime-razon').value = '';
+    document.getElementById('prod-notas').value = '';
+  }).catch(err => {
+    console.error(err);
+    toast('Error guardando producción: ' + err.message, 'warn');
+  });
+}
 
 init();
 </script>
