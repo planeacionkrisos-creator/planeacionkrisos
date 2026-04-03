@@ -1567,19 +1567,20 @@ function aplicarModoVista() {
     if (isToggleTipo || isProdCapture) el.style.display = 'none';
   });
 
-  // En modo vista: mostrar solo historial y chart en producción
-  const prodTab = [...document.querySelectorAll('.tab')].find(t => t.textContent.includes('PRODUCCIÓN'));
-  if (prodTab) {
-    prodTab.onclick = null;
-    prodTab.addEventListener('click', () => {
-      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.getElementById('tab-produccion').classList.add('active');
-      prodTab.classList.add('active');
-      // Auto-abrir historial
-      setProdView('historial');
-    });
-  }
+  // En modo vista: redirigir clic en PRODUCCIÓN para mostrar historial directamente
+  // Se reemplaza el onclick del HTML para evitar conflictos con listeners acumulados
+  document.querySelectorAll('.tab').forEach(tab => {
+    const texto = tab.textContent || '';
+    if (texto.includes('PRODUCCIÓN')) {
+      // Quitar onclick original y usar solo este handler
+      tab.removeAttribute('onclick');
+      tab.onclick = function() {
+        _doSwitchTab('produccion', tab);
+        // Después de cambiar al panel, abrir historial automáticamente
+        setTimeout(() => setProdView('historial'), 0);
+      };
+    }
+  });
 }
 
 function init(){
