@@ -1577,11 +1577,11 @@ function aplicarModoVista() {
   // Se reemplaza el onclick del HTML para evitar conflictos con listeners acumulados
   document.querySelectorAll('.tab').forEach(tab => {
     const texto = tab.textContent || '';
-    if (texto.includes('PRODUCCIÓN')) {
+    if (texto.includes('PRODUCCIÓN') && !texto.includes('PLAN')) {
       // Quitar onclick original y usar solo este handler
       tab.removeAttribute('onclick');
       tab.onclick = function() {
-        _doSwitchTab('produccion', tab);
+        _doSwitchTab('produccion', this);
         // Después de cambiar al panel, abrir historial automáticamente
         setTimeout(() => setProdView('historial'), 0);
       };
