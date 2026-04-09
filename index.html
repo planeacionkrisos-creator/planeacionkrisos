@@ -1335,10 +1335,14 @@ function applyProdChart() {
     return;
   }
 
+  // Normalizar fecha a YYYY-MM-DD para comparación correcta (puede venir como ISO string)
+  const toDateStr = f => f ? f.slice(0,10) : '';
+
   const rows = (window._chartAllData || []).filter(r => {
     if (!r.linea || r.linea.trim().toUpperCase() !== linea.trim().toUpperCase()) return false;
-    if (desde && r.fecha < desde) return false;
-    if (hasta && r.fecha > hasta) return false;
+    const fd = toDateStr(r.fecha);
+    if (desde && fd < desde) return false;
+    if (hasta && fd > hasta) return false;
     return true;
   });
 
@@ -1347,16 +1351,24 @@ function applyProdChart() {
     return;
   }
 
-  // Group by date
-  const grouped = {};
+  // Group by date — acumular tanto kg como pzs
+  const groupedKg = {}, groupedPzs = {};
   rows.forEach(r => {
-    const d = r.fecha || '';
-    if (!grouped[d]) grouped[d] = 0;
-    grouped[d] += (r.productos||[]).reduce((s,p)=>s+(parseFloat(p.producido_kg)||0),0);
+    const d = toDateStr(r.fecha) || '';
+    if (!groupedKg[d]) { groupedKg[d] = 0; groupedPzs[d] = 0; }
+    groupedKg[d]  += (r.productos||[]).reduce((s,p)=>s+(parseFloat(p.producido_kg)||0),0);
+    groupedPzs[d] += (r.productos||[]).reduce((s,p)=>s+(parseFloat(p.producido_pzs)||0),0);
   });
 
-  const sortedDates = Object.keys(grouped).sort();
-  const capacity = (SCHED_CONFIG[linea] && SCHED_CONFIG[linea].kg_dia) || (CAPACIDADES[linea] && CAPACIDADES[linea].kg_dia) || 0;
+  // Si todos los registros tienen 0 kg pero sí tienen pzs, mostrar en pzs automáticamente
+  const sortedDates = Object.keys(groupedKg).sort();
+  const totalKgAll = sortedDates.reduce((s,d)=>s+groupedKg[d],0);
+  const totalPzsAll = sortedDates.reduce((s,d)=>s+groupedPzs[d],0);
+  const usePzs = totalKgAll === 0 && totalPzsAll > 0;
+  const grouped = usePzs ? groupedPzs : groupedKg;
+  const metricLabel = usePzs ? 'Pzs' : 'Kg';
+
+  const capacity = usePzs ? 0 : ((SCHED_CONFIG[linea] && SCHED_CONFIG[linea].kg_dia) || (CAPACIDADES[linea] && CAPACIDADES[linea].kg_dia) || 0);
   const vals = sortedDates.map(d => grouped[d]);
   const maxVal = Math.max(...vals, capacity || 1);
 
@@ -1372,7 +1384,7 @@ function applyProdChart() {
         <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text)">${sortedDates.length}</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 14px">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Promedio kg/día</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Promedio ${metricLabel}/día</div>
         <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue)">${avg.toFixed(0)}</div>
       </div>
       ${capacity > 0 ? `
@@ -1385,7 +1397,7 @@ function applyProdChart() {
         <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red)">${cntFail}</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 14px">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Meta kg/día</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:4px">Meta ${metricLabel}/día</div>
         <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--orange)">${capacity.toFixed(0)}</div>
       </div>` : ''}
     </div>`;
@@ -1446,13 +1458,13 @@ function applyProdChart() {
   if (capY !== null) {
     svgContent += `
       <line x1="${M.l}" y1="${capY}" x2="${W-M.r}" y2="${capY}" stroke="var(--orange)" stroke-width="1.5" stroke-dasharray="5,3"/>
-      <text x="${W-M.r-2}" y="${capY-5}" font-size="10" fill="var(--orange)" text-anchor="end">Meta ${capacity.toFixed(0)} kg</text>`;
+      <text x="${W-M.r-2}" y="${capY-5}" font-size="10" fill="var(--orange)" text-anchor="end">Meta ${capacity.toFixed(0)} ${metricLabel}</text>`;
   }
 
   const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px">
     ${svgContent}
     <text x="${W/2}" y="${H-4}" font-size="10" fill="var(--muted)" text-anchor="middle">Fecha (${sortedDates[0]} — ${sortedDates[sortedDates.length-1]})</text>
-    <text x="10" y="${M.t}" font-size="10" fill="var(--muted)">Kg</text>
+    <text x="10" y="${M.t}" font-size="10" fill="var(--muted)">${metricLabel}</text>
   </svg>`;
 
   // Table
@@ -1463,7 +1475,7 @@ function applyProdChart() {
     const pctColor = pct === null ? 'var(--muted)' : met ? 'var(--green)' : pct >= 80 ? 'var(--yellow)' : 'var(--red)';
     return `<tr>
       <td style="padding:6px 10px;font-family:var(--mono);font-size:11px">${d}</td>
-      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px">${kg.toFixed(1)}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px">${usePzs ? kg.toFixed(0) : kg.toFixed(1)}</td>
       <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px">${capacity > 0 ? capacity.toFixed(1) : '—'}</td>
       <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:${pctColor}">${pct !== null ? pct+'%' : '—'}</td>
       <td style="padding:6px 10px"><div style="height:8px;background:var(--border);border-radius:4px;min-width:60px"><div style="height:100%;width:${Math.min(100,Math.round((kg/maxVal)*100))}%;background:${pct!==null && !met ? (pct>=80?'var(--yellow)':'var(--red)') : 'var(--green)'};border-radius:4px"></div></div></td>
@@ -1471,15 +1483,16 @@ function applyProdChart() {
   }).join('');
 
   area.innerHTML = `
-    <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px">${linea} — Cumplimiento de capacidad</div>
+    <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px">${linea} — Cumplimiento de capacidad</div>
+    ${usePzs ? `<div style="font-size:11px;color:var(--blue);background:rgba(77,166,255,.08);border:1px solid rgba(77,166,255,.2);border-radius:5px;padding:6px 12px;margin-bottom:10px;font-family:var(--mono)">ℹ️ Registros en piezas (sin kg) — mostrando gráfica en PZS</div>` : ''}
     ${statsHtml}
     ${svg}
     <div style="overflow:auto;border-radius:7px;border:1px solid var(--border)">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr style="background:var(--surface2)">
           <th style="padding:7px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Fecha</th>
-          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Producido (kg)</th>
-          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Meta (kg)</th>
+          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Producido (${metricLabel})</th>
+          <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Meta (${metricLabel})</th>
           <th style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Cumpl.</th>
           <th style="padding:7px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase">Barra</th>
         </tr></thead>
