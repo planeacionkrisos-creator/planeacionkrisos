@@ -174,7 +174,7 @@
 </div>
 <div class="tabs">
   <div class="tab" onclick="switchTab('conteo',this)">📦 CONTEO 🔒</div>
-  <div class="tab" onclick="switchTab('plan',this)">📊 PLAN DE PRODUCCIÓN</div>
+  <div class="tab active" onclick="switchTab('plan',this)">📊 PLAN DE PRODUCCIÓN</div>
   <div class="tab" onclick="switchTab('capacidad',this)">⚙️ CARGA POR LÍNEA</div>
   <div class="tab" onclick="switchTab('produccion',this)">🏭 PRODUCCIÓN 🔒</div>
   <div class="tab" onclick="switchTab('pedidos',this)">📋 CARGAR PEDIDOS 🔒</div>
@@ -183,7 +183,7 @@
 </div>
 
 <!-- CONTEO -->
-<div class="panel active" id="tab-conteo">
+<div class="panel" id="tab-conteo">
 
   <!-- Mode toggle -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -287,7 +287,7 @@
 </div>
 
 <!-- PLAN -->
-<div class="panel" id="tab-plan">
+<div class="panel active" id="tab-plan">
   <div class="stats-row" id="statsRow"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
     <div class="view-toggle">
@@ -3703,7 +3703,7 @@ function guardarProduccion() {
     tipo: prodViewMode || 'programado',
     productos: [],
     capacidad_kg: null,
-    downtime_hrs: parseFloat(document.getElementById('downtime-hrs')?.value) || 0,
+    downtime_hrs: (() => { const v = document.getElementById('downtime-hrs')?.value; return v === '' || v === null || v === undefined ? 0 : parseFloat(v) || 0; })(),
     downtime_razon: document.getElementById('downtime-razon')?.value.trim() || '',
     notas: document.getElementById('prod-notas')?.value.trim() || ''
   };
@@ -3742,7 +3742,9 @@ function guardarProduccion() {
 
   // Validar que se haya registrado algo
   const totalProducido = produccion.productos.reduce((s, p) => s + p.producido_kg, 0);
-  if (totalProducido === 0 && produccion.downtime_hrs === 0) {
+  const totalPzs = produccion.productos.reduce((s, p) => s + (p.producido_pzs || 0), 0);
+  const libreRows = (window.libreProductionRows || []).length;
+  if (totalProducido === 0 && totalPzs === 0 && libreRows === 0 && produccion.downtime_hrs === 0) {
     toast('Registra producción o downtime antes de guardar', 'warn');
     return;
   }
