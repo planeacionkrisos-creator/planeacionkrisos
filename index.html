@@ -355,7 +355,7 @@
         <option value="">Seleccionar línea</option>
       </select>
     </div>
-    <div>
+    <div id="prodDiaContainer">
       <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">DÍA</label>
       <select id="prodDia" onchange="updateProdViewSelection()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:7px;font-family:var(--sans);font-size:13px;outline:none">
         <option value="LUNES">Lunes</option>
@@ -366,6 +366,7 @@
         <option value="SÁBADO">Sábado</option>
         <option value="DOMINGO">Domingo</option>
       </select>
+      <div id="prodDiaHoy" style="display:none;background:var(--surface);border:1px solid var(--accent);color:var(--accent);padding:9px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px"></div>
     </div>
   </div>
   <div id="prodContent">
@@ -1070,6 +1071,16 @@ function setProdView(mode) {
   if (btnHistorial) { btnHistorial.style.background = mode==='historial' ? 'var(--accent)' : 'var(--surface)'; btnHistorial.style.color = mode==='historial' ? '#000' : 'var(--text)'; }
   if (btnLibre)    { btnLibre.style.background    = mode==='libre' ? 'var(--accent)' : 'var(--surface)'; btnLibre.style.color    = mode==='libre' ? '#000' : 'var(--text)'; }
   if (btnChart)    { btnChart.style.background    = mode==='chart' ? 'var(--accent)' : 'var(--surface)'; btnChart.style.color    = mode==='chart' ? '#000' : 'var(--text)'; }
+
+  // Mostrar siempre la fecha de hoy fija (todos los modos)
+  const diaSelect = document.getElementById('prodDia');
+  const diaHoy = document.getElementById('prodDiaHoy');
+  const dias = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+  const now = new Date();
+  const nombreDia = dias[now.getDay()];
+  const fechaStr = now.toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'short'});
+  if (diaSelect) diaSelect.style.display = 'none';
+  if (diaHoy) { diaHoy.style.display = 'block'; diaHoy.textContent = fechaStr.toUpperCase(); diaHoy.dataset.dia = nombreDia; }
 
   if (mode === 'programado') renderProduccion();
   else if (mode === 'historial') renderProduccionHistorial();
@@ -3487,7 +3498,9 @@ function renderProduccion() {
   }
 
   const linea = document.getElementById('prodLinea').value;
-  const dia = document.getElementById('prodDia').value;
+  const diaHoyElR = document.getElementById('prodDiaHoy');
+  const dias2 = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+  const dia = (diaHoyElR && diaHoyElR.dataset.dia) ? diaHoyElR.dataset.dia : dias2[new Date().getDay()];
   const content = document.getElementById('prodContent');
 
   if (!linea || !dia) {
@@ -3693,7 +3706,11 @@ function guardarProduccion() {
   // Esta función registra producción/downtime en su propia rama de Firebase
   // no debe modificar ni recalcular inventario para evitar impactos de stock
   const linea = document.getElementById('prodLinea').value;
-  const dia = document.getElementById('prodDia').value;
+  // Siempre usar la fecha de hoy del badge
+  const diaHoyEl = document.getElementById('prodDiaHoy');
+  const dia = (diaHoyEl && diaHoyEl.dataset.dia)
+    ? diaHoyEl.dataset.dia
+    : document.getElementById('prodDia').value;
   if (!linea || !dia) return;
 
   let produccion = {
