@@ -156,7 +156,100 @@
   ::-webkit-scrollbar-track{background:var(--bg);}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
-  /* ===== PLAN FILTERS BAR ===== */
+  /* ===== CLIENT BREAKDOWN IN PLAN TABLE ===== */
+  .pend-clickable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: color 0.15s;
+  }
+  .pend-clickable:hover {
+    color: #ffb347 !important;
+    text-decoration: underline dotted;
+  }
+  .pend-chevron {
+    font-size: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
+    opacity: 0.7;
+    transition: transform 0.2s, color 0.2s;
+    display: inline-block;
+  }
+  .breakdown-row td {
+    padding: 0 !important;
+  }
+  .breakdown-cell {
+    padding: 0 !important;
+    border-bottom: 2px solid var(--accent) !important;
+  }
+  .breakdown-container {
+    background: linear-gradient(135deg, rgba(15,17,23,0.95), rgba(20,25,38,0.98));
+    border-left: 3px solid var(--orange);
+    padding: 10px 16px 12px 20px;
+    animation: breakdownSlide 0.18s ease;
+  }
+  @keyframes breakdownSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .breakdown-header {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,140,0,0.15);
+  }
+  .breakdown-cliente-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(42,48,69,0.4);
+    position: relative;
+  }
+  .breakdown-cliente-row:last-child { border-bottom: none; }
+  .breakdown-bar-bg {
+    width: 80px;
+    height: 4px;
+    background: rgba(255,140,0,0.12);
+    border-radius: 2px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .breakdown-bar-fill {
+    height: 100%;
+    background: var(--orange);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .breakdown-nombre {
+    font-size: 11px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .breakdown-pend {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--orange);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .breakdown-pct {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
   .plan-filters-bar {
     display: flex;
     gap: 10px;
@@ -2362,8 +2455,52 @@ function renderLista(){
     const dias=p.DIAS_COBERTURA===999?'∞':p.DIAS_COBERTURA.toFixed(1);
     const barW=Math.min(100,Math.max(0,p.DIAS_COBERTURA===999?100:(p.DIAS_COBERTURA/10)*100));
     const ci=inventory[p.SKU]!==undefined?'color:var(--accent);font-weight:700':'';
-    return `<tr><td class="mono" style="color:var(--muted)">${i+1}</td><td><span class="pill ${m.cls}"><span class="urgency-dot ${m.dot}"></span>${m.label}</span></td><td style="font-size:11px;color:var(--muted)">${p.LINEA||'—'}</td><td class="product-cell">${p.PRODUCTO}</td><td class="mono" style="color:var(--muted);font-size:10px">${p.SKU}</td><td class="mono" style="${ci}">${fmt(p.INV_ACTUAL)}</td><td class="mono" style="color:${p.TOTAL_PENDIENTE>0?'var(--orange)':'var(--muted)'}">${fmt(p.TOTAL_PENDIENTE)}</td><td class="mono" style="color:${p.INV_NETO<0?'var(--red)':''}">${fmt(p.INV_NETO)}</td><td class="mono">${fmt(p.INV_MIN_PZS)}</td><td><div style="display:flex;align-items:center;gap:6px"><div class="bar-wrap"><div class="bar-fill" style="width:${barW}%;background:${m.color}"></div></div><span class="mono" style="font-size:11px;color:${p.DIAS_COBERTURA<0?'var(--red)':''}">${dias}d</span></div></td><td class="mono">${fmt(p.REQ_DIARIO)}</td><td class="mono" style="color:var(--blue)">${fmt(p.REQ_SEMANAL)}</td><td class="mono" style="color:${p.A_PRODUCIR>0?'var(--accent)':'var(--muted)'};font-weight:${p.A_PRODUCIR>0?700:400}">${fmt(p.A_PRODUCIR)}</td><td class="mono" style="color:${p.A_PRODUCIR_KG>0?'var(--green)':'var(--muted)'};font-weight:${p.A_PRODUCIR_KG>0?700:400}">${p.A_PRODUCIR_KG>0?fmt(p.A_PRODUCIR_KG)+' kg':'—'}</td></tr>`;
+    const hasPend = p.TOTAL_PENDIENTE > 0;
+    const skuId = p.SKU.replace(/[^a-zA-Z0-9]/g,'_');
+    // Build client breakdown for this SKU
+    const clientRows = clientesData.filter(r=>r.sku===p.SKU && r.pend>0);
+    const hasClients = clientRows.length > 0;
+    const pendCell = hasPend
+      ? `<td class="mono pend-cell${hasClients?' pend-clickable':''}" style="color:var(--orange)" ${hasClients?`onclick="toggleClientBreakdown('${skuId}')" title="Click para ver clientes"`:''}>${fmt(p.TOTAL_PENDIENTE)}${hasClients?'<span class="pend-chevron" id="chev-'+skuId+'">▾</span>':''}</td>`
+      : `<td class="mono" style="color:var(--muted)">${fmt(p.TOTAL_PENDIENTE)}</td>`;
+    const mainRow = `<tr id="row-${skuId}"><td class="mono" style="color:var(--muted)">${i+1}</td><td><span class="pill ${m.cls}"><span class="urgency-dot ${m.dot}"></span>${m.label}</span></td><td style="font-size:11px;color:var(--muted)">${p.LINEA||'—'}</td><td class="product-cell">${p.PRODUCTO}</td><td class="mono" style="color:var(--muted);font-size:10px">${p.SKU}</td><td class="mono" style="${ci}">${fmt(p.INV_ACTUAL)}</td>${pendCell}<td class="mono" style="color:${p.INV_NETO<0?'var(--red)':''}">${fmt(p.INV_NETO)}</td><td class="mono">${fmt(p.INV_MIN_PZS)}</td><td><div style="display:flex;align-items:center;gap:6px"><div class="bar-wrap"><div class="bar-fill" style="width:${barW}%;background:${m.color}"></div></div><span class="mono" style="font-size:11px;color:${p.DIAS_COBERTURA<0?'var(--red)':''}">${dias}d</span></div></td><td class="mono">${fmt(p.REQ_DIARIO)}</td><td class="mono" style="color:var(--blue)">${fmt(p.REQ_SEMANAL)}</td><td class="mono" style="color:${p.A_PRODUCIR>0?'var(--accent)':'var(--muted)'};font-weight:${p.A_PRODUCIR>0?700:400}">${fmt(p.A_PRODUCIR)}</td><td class="mono" style="color:${p.A_PRODUCIR_KG>0?'var(--green)':'var(--muted)'};font-weight:${p.A_PRODUCIR_KG>0?700:400}">${p.A_PRODUCIR_KG>0?fmt(p.A_PRODUCIR_KG)+' kg':'—'}</td></tr>`;
+
+    let breakdownRow = '';
+    if(hasClients){
+      // Merge duplicate clients (same client can appear multiple times across pedidos)
+      const merged = {};
+      clientRows.forEach(r=>{
+        const key = r.cliente;
+        if(!merged[key]) merged[key]={cliente:r.cliente, pend:0, pedidos:new Set()};
+        merged[key].pend += r.pend;
+        if(r.pedido && r.pedido!=='—') merged[key].pedidos.add(r.pedido);
+      });
+      const mergedArr = Object.values(merged).sort((a,b)=>b.pend-a.pend);
+      const clientHtml = mergedArr.map(c=>{
+        const pct = p.TOTAL_PENDIENTE>0 ? Math.round((c.pend/p.TOTAL_PENDIENTE)*100) : 0;
+        const peds = c.pedidos.size>0 ? `<span style="color:var(--muted);font-size:10px;margin-left:6px">Ped. ${[...c.pedidos].join(', ')}</span>` : '';
+        return `<div class="breakdown-cliente-row">
+          <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:${pct}%"></div></div>
+          <span class="breakdown-nombre">${c.cliente}</span>
+          <span class="breakdown-pend">${fmt(c.pend)} pzs</span>
+          <span class="breakdown-pct">${pct}%</span>
+          ${peds}
+        </div>`;
+      }).join('');
+      breakdownRow = `<tr class="breakdown-row" id="breakdown-${skuId}" style="display:none"><td colspan="14" class="breakdown-cell"><div class="breakdown-container"><div class="breakdown-header"><span>👥 Clientes con pendiente · ${mergedArr.length} cliente${mergedArr.length!==1?'s':''}</span></div>${clientHtml}</div></td></tr>`;
+    }
+    return mainRow + breakdownRow;
   }).join('');
+}
+
+function toggleClientBreakdown(skuId){
+  const row = document.getElementById('breakdown-'+skuId);
+  const chev = document.getElementById('chev-'+skuId);
+  if(!row) return;
+  const isOpen = row.style.display !== 'none';
+  row.style.display = isOpen ? 'none' : 'table-row';
+  if(chev) chev.textContent = isOpen ? '▾' : '▴';
+  if(chev) chev.style.color = isOpen ? '' : 'var(--accent)';
 }
 
 // ======= SCHEDULER CONFIG =======
