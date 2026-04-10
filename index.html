@@ -155,6 +155,193 @@
   ::-webkit-scrollbar{width:5px;height:5px;}
   ::-webkit-scrollbar-track{background:var(--bg);}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  /* ===== PLAN FILTERS BAR ===== */
+  .plan-filters-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(31,37,53,0.8), rgba(24,28,38,0.9));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+    margin-bottom: 0;
+  }
+
+  /* Select wrapper */
+  .pf-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(15,17,23,0.7);
+    border: 1px solid rgba(42,48,69,0.9);
+    border-radius: 10px;
+    padding: 0 12px 0 10px;
+    height: 40px;
+    gap: 7px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .pf-select-wrap:hover,
+  .pf-select-wrap:focus-within {
+    border-color: rgba(245,166,35,0.5);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.08), 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .pf-select-wrap:focus-within .pf-icon {
+    color: var(--accent);
+  }
+
+  .pf-icon {
+    font-size: 13px;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: color 0.2s;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .pf-chevron {
+    font-size: 16px;
+    color: var(--muted);
+    flex-shrink: 0;
+    pointer-events: none;
+    line-height: 1;
+    transform: rotate(90deg);
+    display: block;
+  }
+
+  .pf-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    min-width: 100px;
+    letter-spacing: 0.2px;
+  }
+  .pf-select option {
+    background: #1a1f2e;
+    color: var(--text);
+  }
+
+  /* Search wrapper */
+  .pf-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(15,17,23,0.7);
+    border: 1px solid rgba(42,48,69,0.9);
+    border-radius: 10px;
+    padding: 0 10px;
+    height: 40px;
+    gap: 7px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 200px;
+  }
+  .pf-search-wrap:hover,
+  .pf-search-wrap:focus-within {
+    border-color: rgba(245,166,35,0.5);
+    box-shadow: 0 0 0 3px rgba(245,166,35,0.08), 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .pf-search-wrap:focus-within .pf-icon {
+    color: var(--accent);
+  }
+
+  .pf-search {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    outline: none;
+    flex: 1;
+    min-width: 0;
+    letter-spacing: 0.2px;
+  }
+  .pf-search::placeholder {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .pf-search-clear {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .pf-search-clear:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Autocomplete dropdown */
+  .pf-autocomplete {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #1a1f2e;
+    border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 200;
+    overflow: hidden;
+    display: none;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .pf-autocomplete.open {
+    display: block;
+    animation: acFadeIn 0.15s ease;
+  }
+  @keyframes acFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .pf-ac-item {
+    padding: 9px 14px;
+    font-size: 12px;
+    font-family: var(--sans);
+    color: var(--text);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(42,48,69,0.5);
+    transition: background 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pf-ac-item:last-child { border-bottom: none; }
+  .pf-ac-item:hover, .pf-ac-item.selected {
+    background: rgba(245,166,35,0.12);
+    color: var(--accent);
+  }
+  .pf-ac-item mark {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .pf-ac-empty {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
@@ -294,23 +481,39 @@
       <button class="vt-btn active" id="vt-lista" onclick="setView('lista')">≡ LISTA</button>
       <button class="vt-btn" id="vt-semanal" onclick="setView('semanal')">📅 SEMANAL</button>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      <select id="planFilter" onchange="renderPlan()">
-        <option value="all">Todos</option>
-        <option value="critical">🔴 Críticos</option>
-        <option value="urgent">🟠 Urgentes (≤3d)</option>
-        <option value="produce">Requieren producción</option>
-      </select>
-      <select id="lineaFilterPlan" onchange="renderPlan()"><option value="">Todas las líneas</option></select>
-      <input type="text" id="searchPlan" placeholder="Buscar..." oninput="renderPlan()" style="min-width:140px">
-      <select id="sortPlan" onchange="renderPlan()" style="min-width:160px">
-        <option value="urgencia">↕ Urgencia</option>
-        <option value="pendiente_desc">↓ Mayor pendiente</option>
-        <option value="pendiente_asc">↑ Menor pendiente</option>
-        <option value="inv_asc">↓ Menor inventario</option>
-        <option value="dias_asc">↓ Menos días cobertura</option>
-      </select>
-      <button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button>
+    <div class="plan-filters-bar" style="flex:1;margin-left:10px;">
+      <div class="pf-select-wrap">
+        <span class="pf-icon">⊞</span>
+        <select id="planFilter" onchange="renderPlan()" class="pf-select">
+          <option value="all">Todos</option>
+          <option value="critical">Críticos</option>
+          <option value="urgent">Urgentes (≤3d)</option>
+          <option value="produce">Requieren producción</option>
+        </select>
+        <span class="pf-chevron">›</span>
+      </div>
+      <div class="pf-select-wrap">
+        <span class="pf-icon">⊟</span>
+        <select id="lineaFilterPlan" onchange="renderPlan()" class="pf-select"><option value="">Línea</option></select>
+        <span class="pf-chevron">›</span>
+      </div>
+      <div class="pf-search-wrap" id="searchPlanWrap">
+        <span class="pf-icon">🔍</span>
+        <input type="text" id="searchPlan" placeholder="Buscar producto..." oninput="handleSearchPlan(this.value)" autocomplete="off" class="pf-search">
+        <button class="pf-search-clear" id="searchPlanClear" onclick="clearSearchPlan()" style="display:none">✕</button>
+        <div class="pf-autocomplete" id="searchPlanAC"></div>
+      </div>
+      <div class="pf-select-wrap">
+        <span class="pf-icon">↕</span>
+        <select id="sortPlan" onchange="renderPlan()" class="pf-select">
+          <option value="urgencia">Urgencia</option>
+          <option value="pendiente_desc">Mayor pendiente</option>
+          <option value="pendiente_asc">Menor pendiente</option>
+          <option value="inv_asc">Menor inventario</option>
+          <option value="dias_asc">Menos días cobertura</option>
+        </select>
+        <span class="pf-chevron">›</span>
+      </div>
     </div>
   </div>
   <div id="view-lista">
@@ -2083,6 +2286,8 @@ function getFiltered(){
   const filt=document.getElementById('planFilter').value;
   const linea=document.getElementById('lineaFilterPlan').value;
   const q=(document.getElementById('searchPlan').value||'').toLowerCase();
+  // Cache for autocomplete
+  window._cachedProducts = getAllProducts();
   const sort=(document.getElementById('sortPlan')?.value)||'urgencia';
   const data = getAllProducts().map(eff).filter(p=>{
     const u=urg(p);
@@ -2103,20 +2308,16 @@ function getFiltered(){
     const aUrg = uOrder[urg(a)] || 99;
     const bUrg = uOrder[urg(b)] || 99;
     if(sort==='pendiente_desc') {
-      const d = bProd - aProd;
-      if (d !== 0) return d;
       const dp = bPend - aPend;
       if (dp !== 0) return dp;
       if (aUrg !== bUrg) return aUrg - bUrg;
       return a.INV_NETO - b.INV_NETO;
     }
     if(sort==='pendiente_asc') {
-      const d = aProd - bProd;
-      if (d !== 0) return d;
       const dp = aPend - bPend;
       if (dp !== 0) return dp;
       if (aUrg !== bUrg) return aUrg - bUrg;
-      return a.INV_NETO - b.INV_NETO;
+      return b.INV_NETO - a.INV_NETO;
     }
     if(sort==='inv_asc')        return a.INV_ACTUAL-b.INV_ACTUAL;
     if(sort==='dias_asc')       return a.DIAS_COBERTURA-b.DIAS_COBERTURA;
@@ -3814,6 +4015,106 @@ function guardarProduccion() {
 }
 
 init();
+
+// ===== PLAN SEARCH AUTOCOMPLETE =====
+let _acSelected = -1;
+
+function handleSearchPlan(val) {
+  renderPlan();
+  const clear = document.getElementById('searchPlanClear');
+  if (clear) clear.style.display = val ? 'block' : 'none';
+  showAutocomplete(val);
+}
+
+function clearSearchPlan() {
+  const inp = document.getElementById('searchPlan');
+  if (inp) { inp.value = ''; inp.focus(); }
+  document.getElementById('searchPlanClear').style.display = 'none';
+  hideAutocomplete();
+  renderPlan();
+}
+
+function showAutocomplete(query) {
+  const ac = document.getElementById('searchPlanAC');
+  if (!ac) return;
+  if (!query || query.length < 1) { hideAutocomplete(); return; }
+
+  const q = query.toLowerCase();
+  const all = window._cachedProducts || [];
+  const matches = all
+    .filter(p => p.PRODUCTO && p.PRODUCTO.toLowerCase().includes(q))
+    .slice(0, 8);
+
+  if (!matches.length) {
+    ac.innerHTML = `<div class="pf-ac-empty">Sin resultados para "${query}"</div>`;
+    ac.classList.add('open');
+    _acSelected = -1;
+    return;
+  }
+
+  ac.innerHTML = matches.map((p, i) => {
+    const name = p.PRODUCTO;
+    const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    const highlighted = name.replace(re, '<mark>$1</mark>');
+    return `<div class="pf-ac-item" data-val="${name.replace(/"/g,'&quot;')}" onmousedown="selectAC(this)">${highlighted}</div>`;
+  }).join('');
+
+  ac.classList.add('open');
+  _acSelected = -1;
+}
+
+function hideAutocomplete() {
+  const ac = document.getElementById('searchPlanAC');
+  if (ac) ac.classList.remove('open');
+  _acSelected = -1;
+}
+
+function selectAC(el) {
+  const val = el.getAttribute('data-val');
+  const inp = document.getElementById('searchPlan');
+  if (inp) inp.value = val;
+  document.getElementById('searchPlanClear').style.display = 'block';
+  hideAutocomplete();
+  renderPlan();
+}
+
+// Keyboard navigation for autocomplete
+document.addEventListener('keydown', function(e) {
+  const ac = document.getElementById('searchPlanAC');
+  if (!ac || !ac.classList.contains('open')) return;
+  const items = ac.querySelectorAll('.pf-ac-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _acSelected = Math.min(_acSelected + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _acSelected = Math.max(_acSelected - 1, 0);
+  } else if (e.key === 'Enter') {
+    if (_acSelected >= 0 && items[_acSelected]) {
+      selectAC(items[_acSelected]);
+      e.preventDefault();
+      return;
+    }
+    hideAutocomplete();
+    return;
+  } else if (e.key === 'Escape') {
+    hideAutocomplete();
+    return;
+  } else { return; }
+  items.forEach((it, i) => it.classList.toggle('selected', i === _acSelected));
+  if (items[_acSelected]) items[_acSelected].scrollIntoView({block:'nearest'});
+});
+
+// Close autocomplete when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#searchPlanWrap')) hideAutocomplete();
+});
+
+// Cache products for autocomplete
+function cacheProductsForAC(products) {
+  window._cachedProducts = products;
+}
 </script>
 
 <style>
