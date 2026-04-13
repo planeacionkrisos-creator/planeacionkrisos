@@ -822,6 +822,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script>
 // Declarar MODO_VISTA al inicio para que esté disponible en toda la app
 const MODO_VISTA = new URLSearchParams(window.location.search).get('modo') === 'vista';
@@ -857,6 +858,10 @@ function initFirebase() {
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
+    // Autenticación anónima — requerida por reglas de seguridad, invisible para el usuario
+    firebase.auth().signInAnonymously()
+      .then(() => console.log('Firebase: sesión anónima iniciada'))
+      .catch(e => console.warn('Firebase auth error:', e));
   } catch(e) { console.warn('Firebase init error:', e); }
 }
 
