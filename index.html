@@ -445,8 +445,11 @@
       <span id="fbDot" style="width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block"></span>
       <span id="fbTxt">conectando...</span>
     </div>
-    <div id="lastUpdateBadge" style="display:none;font-family:var(--mono);font-size:9px;color:var(--muted);background:rgba(255,255,255,.05);padding:3px 8px;border-radius:10px;border:1px solid var(--border)">
-      🕐 <span id="lastUpdateTxt"></span>
+    <div id="invUpdateBadge" style="display:none;font-family:var(--mono);font-size:9px;color:var(--muted);background:rgba(255,255,255,.05);padding:3px 8px;border-radius:10px;border:1px solid var(--border)">
+      📦 <span id="invUpdateTxt"></span>
+    </div>
+    <div id="pedUpdateBadge" style="display:none;font-family:var(--mono);font-size:9px;color:var(--muted);background:rgba(255,255,255,.05);padding:3px 8px;border-radius:10px;border:1px solid var(--border);margin-left:4px">
+      📋 <span id="pedUpdateTxt"></span>
     </div>
     <div class="week-badge" id="weekBadge"></div>
     <div class="date-badge" id="dateBadge"></div>
@@ -563,6 +566,7 @@
     <button class="btn btn-outline" onclick="document.getElementById('importInvFile').click()" style="color:var(--blue);border-color:var(--blue)">📥 IMPORTAR INVENTARIO</button>
     <input type="file" id="importInvFile" accept=".xlsx,.xlsm,.csv" style="display:none" onchange="importInventario(this)">
     <button class="btn btn-danger" onclick="clearConteo()">🗑 LIMPIAR TODO</button>
+    <button class="btn btn-danger" onclick="resetearFirebase()" style="border-color:#ff8c00;color:#ff8c00" title="Limpia inventario y pedidos guardados en Firebase para resolver datos atorados">⚠️ RESET FIREBASE</button>
   </div>
 </div>
 
@@ -865,16 +869,27 @@ function initFirebase() {
   } catch(e) { console.warn('Firebase init error:', e); }
 }
 
-function mostrarUltimaActualizacion(ts) {
-  if (!ts) return;
+function fmtTs(ts) {
+  if (!ts) return null;
   const d = new Date(ts);
   const fecha = d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
   const hora  = d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-  const el = document.getElementById('lastUpdateBadge');
-  if (el) {
-    el.style.display = '';
-    document.getElementById('lastUpdateTxt').textContent = `Actualizado: ${fecha} ${hora}`;
-  }
+  return `${fecha} ${hora}`;
+}
+function mostrarUltimaActualizacion(ts) {
+  // Legado: no hace nada, se usan las funciones específicas abajo
+}
+function mostrarFechaInventario(ts) {
+  const txt = fmtTs(ts);
+  if (!txt) return;
+  const el = document.getElementById('invUpdateBadge');
+  if (el) { el.style.display = ''; document.getElementById('invUpdateTxt').textContent = `Inv: ${txt}`; }
+}
+function mostrarFechaPedidos(ts) {
+  const txt = fmtTs(ts);
+  if (!txt) return;
+  const el = document.getElementById('pedUpdateBadge');
+  if (el) { el.style.display = ''; document.getElementById('pedUpdateTxt').textContent = `Ped: ${txt}`; }
 }
 
 let fbGuardando = false;
@@ -895,18 +910,24 @@ function guardarHistorial(tipo, datos) {
   } catch(e) { console.warn('Error guardando historial:', e); }
 }
 
-function guardarEstado() {
+function guardarEstado(opts) {
   if (MODO_VISTA || !db) return;
+  // opts puede tener: {invTs, pedTs} para actualizar timestamps específicos
+  if (opts && opts.invTs) window._invUpdatedAt = opts.invTs;
+  if (opts && opts.pedTs) window._pedUpdatedAt = opts.pedTs;
   try {
     db.ref('kalos/estado').set({
-      inventory:      inventory,
-      pendingOrders:  pendingOrders,
-      customProducts: customProducts,
-      capturaLog:     capturaLog.slice(0, 200),
-      deletedSkus:    window.deletedSkus || [],
-      clientesData:   clientesData.slice(0, 2000),
+      inventory:        inventory,
+      pendingOrders:    pendingOrders,
+      customProducts:   customProducts,
+      capturaLog:       capturaLog.slice(0, 200),
+      deletedSkus:      window.deletedSkus || [],
+      clientesData:     clientesData.slice(0, 2000),
       distribucionSkus: distribucionSkus,
-      updatedAt:      Date.now()
+      updatedAt:          Date.now(),
+      fecha:              new Date().toISOString().slice(0,10),
+      inventoryUpdatedAt: window._invUpdatedAt || null,
+      pedidosUpdatedAt:   window._pedUpdatedAt || null
     });
   } catch(e) { console.warn('Firebase error:', e); }
 }
@@ -923,7 +944,8 @@ function cargarEstado() {
     if (data.deletedSkus)    window.deletedSkus   = data.deletedSkus;
     if (data.clientesData)    clientesData         = data.clientesData;
     if (data.distribucionSkus) distribucionSkus    = data.distribucionSkus;
-    mostrarUltimaActualizacion(data.updatedAt);
+    mostrarFechaInventario(data.inventoryUpdatedAt);
+    mostrarFechaPedidos(data.pedidosUpdatedAt);
     renderProductList();
     filterUbicProds();
     updateCountInfo();
@@ -940,7 +962,10 @@ function cargarEstado() {
     window.deletedSkus  = data.deletedSkus    || [];
     clientesData        = data.clientesData   || [];
     distribucionSkus    = data.distribucionSkus || [];
-    mostrarUltimaActualizacion(data.updatedAt);
+    mostrarFechaInventario(data.inventoryUpdatedAt);
+    mostrarFechaPedidos(data.pedidosUpdatedAt);
+    if(data.inventoryUpdatedAt) window._invUpdatedAt = data.inventoryUpdatedAt;
+    if(data.pedidosUpdatedAt)   window._pedUpdatedAt = data.pedidosUpdatedAt;
     renderProductList();
     filterUbicProds();
     updateCountInfo();
@@ -1987,6 +2012,36 @@ function clearConteo(){
   guardarEstado();
 }
 
+function resetearFirebase(){
+  const pwd = prompt('🔒 Contraseña para resetear Firebase:');
+  if(pwd === null) return;
+  if(pwd !== 'krisos'){ toast('❌ Contraseña incorrecta','warn'); return; }
+  if(!confirm('⚠️ Esto borrará el inventario y pedidos guardados en Firebase (el estado atorado). ¿Continuar?')) return;
+  inventory = {};
+  pendingOrders = {};
+  capturaLog = [];
+  clientesData = [];
+  document.querySelectorAll('.qty-input').forEach(el=>{el.value='';el.classList.remove('filled');});
+  updateCountInfo();
+  renderProductList();
+  renderPlan();
+  if(db){
+    db.ref('kalos/estado').set({
+      inventory: {},
+      pendingOrders: {},
+      customProducts: customProducts,
+      capturaLog: [],
+      deletedSkus: window.deletedSkus || [],
+      clientesData: [],
+      distribucionSkus: distribucionSkus,
+      updatedAt: Date.now(),
+      resetAt: Date.now()
+    }).then(()=>{
+      toast('✓ Firebase reseteado — vuelve a importar inventario y pedidos','success');
+    }).catch(e=>{ toast('Error al resetear: '+e.message,'warn'); });
+  }
+}
+
 // ======= CUSTOM PRODUCTS =======
 let customProducts = []; // added/edited by user at runtime
 let editingSku = null;
@@ -2311,27 +2366,22 @@ function importInventario(input) {
         const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
 
         // Find header row — look for SKUS + CANTIDAD headers
-        // FIX: buscar la primera columna CANTIDAD y la columna SKUS correctas,
-        //      ignorando columnas de fórmulas como =TODAY() que pueden confundirse con datos.
+        // FIX: ignorar columnas de fórmulas como =TODAY() que no son texto real
         let skuCol = -1, qtyCol = -1, startRow = 0;
         for (let i = 0; i < Math.min(5, data.length); i++) {
           const h = data[i].map(c => String(c).toUpperCase().trim());
-          // Match "SKUS" or "SKU" in any column
           const si = h.findIndex(c => c === 'SKUS' || c === 'SKU' || c.includes('SKUS'));
-          // Match "CANTIDAD TOTAL" — must be explicit text, not a formula result.
-          // Find the FIRST column whose header text includes CANTIDAD (not just a number).
+          // Solo coincidir columnas cuyo header sea texto con CANTIDAD, no un número (fecha serial)
           const qi = h.findIndex(c => c.includes('CANTIDAD') && isNaN(Number(c)));
           if (si >= 0 && qi >= 0) { skuCol = si; qtyCol = qi; startRow = i+1; break; }
         }
 
-        // Fallback: use known fixed positions from INVENTARIO KALOS format
-        // Col 4 = SKUS, Col 1 = CANTIDAD TOTAL EN PZ (NOT col 3 which is =TODAY() fórmula)
+        // Fallback: posiciones fijas del formato INVENTARIO KALOS
+        // Col 4 = SKUS, Col 1 = CANTIDAD TOTAL EN PZ (NO col 3 que es =TODAY() fórmula)
         if (skuCol < 0 && data.length > 1) {
           skuCol = 4; qtyCol = 1; startRow = 1;
         }
-
-        // SAFETY: si qtyCol apunta a la columna de =TODAY() (col 3 en formato KALOS),
-        // forzar a col 1 que es la cantidad real.
+        // SAFETY: si qtyCol cayó en la columna de =TODAY() (col 3), forzar col 1
         if (skuCol === 4 && qtyCol === 3) { qtyCol = 1; }
 
         rows = data.slice(startRow).map(r => ({
@@ -2361,8 +2411,10 @@ function importInventario(input) {
       renderProductList();
       filterUbicProds();
       updateCountInfo();
-      guardarEstado();
+      const _invTs = Date.now();
+      guardarEstado({invTs: _invTs});
       guardarHistorial('inventario', {inventario: newInventory});
+      mostrarFechaInventario(_invTs);
       toast(`✓ Inventario importado — ${matched} productos cargados${skipped > 0 ? ` (${skipped} sin empatar)` : ''}`, 'success');
 
     } catch(err) {
@@ -2800,7 +2852,7 @@ function toggleDay(h){const c=h.nextElementSibling;const ch=h.querySelector('.ch
 function ev(e,cls){e.preventDefault();document.getElementById('uploadZone').className='upload-zone '+cls;}
 function dropFile(e){e.preventDefault();document.getElementById('uploadZone').className='upload-zone';const f=e.dataTransfer.files[0];if(f)processCSV(f);}
 function loadCSV(e){const f=e.target.files[0];if(f)processCSV(f);}
-// processCSV definida abajo (versión unificada con clientesData y resolvePedidoSku)
+// processCSV unificada abajo
 
 let clientesData = []; // raw rows with client info
 let distribucionSkus = []; // SKUs manually marked as distribución
@@ -2861,19 +2913,11 @@ function processCSV(file){
       const rawCode = cols[ci]?.trim();
       const pend = parseFloat(cols[pi])||0;
       if(!rawCode) continue;
-
-      // FIX: usar resolvePedidoSku para mapear correctamente códigos a SKUs del catálogo
+      // FIX: resolver SKU correctamente y acumular suma por SKU
       const resolvedSku = resolvePedidoSku(rawCode);
       const sku = resolvedSku || rawCode;
-
-      if(resolvedSku && resolvedSku !== rawCode){
-        mappedEntries.push(`${rawCode} → ${resolvedSku}`);
-      }
-      if(!resolvedSku){
-        unknownCodes.push(rawCode);
-      }
-
-      // FIX: acumular SUMA de pendientes por SKU (no pisar el valor anterior)
+      if(resolvedSku && resolvedSku !== rawCode) mappedEntries.push(`${rawCode}→${resolvedSku}`);
+      if(!resolvedSku) unknownCodes.push(rawCode);
       np[sku]=(np[sku]||0)+pend;
       cnt++;
       if(pend>0) rawRows.push({
@@ -2890,22 +2934,17 @@ function processCSV(file){
 
     pendingOrders = np;
     clientesData  = rawRows;
-    guardarEstado();
+    const _pedTs = Date.now();
+    guardarEstado({pedTs: _pedTs});
     guardarHistorial('pedidos', {pedidos: np, clientes: rawRows});
+    mostrarFechaPedidos(_pedTs);
 
     const allProds=getAllProducts();
     const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
     const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
-
     let extraMsg='';
-    if(mappedEntries.length){
-      extraMsg += `<br><span style="color:var(--blue);font-size:12px">Se resolvieron ${mappedEntries.length} códigos a SKU: ${mappedEntries.slice(0,5).join(', ')}${mappedEntries.length>5?'...':''}</span>`;
-    }
-    if(unknownCodes.length){
-      const uniqueUnknown=[...new Set(unknownCodes)];
-      extraMsg += `<br><span style="color:var(--muted);font-size:12px">Sin empatar: ${uniqueUnknown.slice(0,5).join(', ')}${uniqueUnknown.length>5?'...':''}</span>`;
-    }
-
+    if(mappedEntries.length) extraMsg+=`<br><span style="color:var(--blue);font-size:12px">Resueltos ${mappedEntries.length} códigos a SKU</span>`;
+    if(unknownCodes.length){const u=[...new Set(unknownCodes)];extraMsg+=`<br><span style="color:var(--muted);font-size:12px">Sin empatar: ${u.slice(0,5).join(', ')}${u.length>5?'...':''}</span>`;}
     document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo: ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}${extraMsg}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
     toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
 
