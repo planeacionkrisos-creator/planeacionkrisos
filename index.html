@@ -2311,21 +2311,28 @@ function importInventario(input) {
         const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
 
         // Find header row — look for SKUS + CANTIDAD headers
+        // FIX: buscar la primera columna CANTIDAD y la columna SKUS correctas,
+        //      ignorando columnas de fórmulas como =TODAY() que pueden confundirse con datos.
         let skuCol = -1, qtyCol = -1, startRow = 0;
         for (let i = 0; i < Math.min(5, data.length); i++) {
           const h = data[i].map(c => String(c).toUpperCase().trim());
           // Match "SKUS" or "SKU" in any column
           const si = h.findIndex(c => c === 'SKUS' || c === 'SKU' || c.includes('SKUS'));
-          // Match "CANTIDAD TOTAL" or "CANTIDAD"
-          const qi = h.findIndex(c => c.includes('CANTIDAD'));
+          // Match "CANTIDAD TOTAL" — must be explicit text, not a formula result.
+          // Find the FIRST column whose header text includes CANTIDAD (not just a number).
+          const qi = h.findIndex(c => c.includes('CANTIDAD') && isNaN(Number(c)));
           if (si >= 0 && qi >= 0) { skuCol = si; qtyCol = qi; startRow = i+1; break; }
         }
 
         // Fallback: use known fixed positions from INVENTARIO KALOS format
-        // Col 4 = SKUS, Col 1 = CANTIDAD TOTAL EN PZ
+        // Col 4 = SKUS, Col 1 = CANTIDAD TOTAL EN PZ (NOT col 3 which is =TODAY() fórmula)
         if (skuCol < 0 && data.length > 1) {
           skuCol = 4; qtyCol = 1; startRow = 1;
         }
+
+        // SAFETY: si qtyCol apunta a la columna de =TODAY() (col 3 en formato KALOS),
+        // forzar a col 1 que es la cantidad real.
+        if (skuCol === 4 && qtyCol === 3) { qtyCol = 1; }
 
         rows = data.slice(startRow).map(r => ({
           sku: String(r[skuCol]||'').trim(),
@@ -2793,65 +2800,7 @@ function toggleDay(h){const c=h.nextElementSibling;const ch=h.querySelector('.ch
 function ev(e,cls){e.preventDefault();document.getElementById('uploadZone').className='upload-zone '+cls;}
 function dropFile(e){e.preventDefault();document.getElementById('uploadZone').className='upload-zone';const f=e.dataTransfer.files[0];if(f)processCSV(f);}
 function loadCSV(e){const f=e.target.files[0];if(f)processCSV(f);}
-function processCSV(file){
-  const r=new FileReader();
-  r.onload=e=>{
-    const lines=e.target.result.split('\n');
-    if(lines.length<2){toast('CSV vacío','warn');return;}
-    const sep=lines[0].includes(';')?';':',';
-    const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,'').toLowerCase());
-    const ci=hdrs.findIndex(h=>h==='codigo'||h==='código');
-    const pi=hdrs.findIndex(h=>h==='pendiente');
-    if(ci<0||pi<0){toast('No se encontraron columnas Codigo/Pendiente','warn');return;}
-
-    const np={};
-    let cnt=0;
-    const allProds=getAllProducts();
-    const mappedEntries=[];
-    const unknownCodes=[];
-
-    for(let i=1;i<lines.length;i++){
-      if(!lines[i].trim())continue;
-      const cols=lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
-      const rawCode=(cols[ci]||'').trim();
-      if(!rawCode) continue;
-      const pend=parseFloat(cols[pi])||0;
-      cnt++;
-
-      const resolvedSku = resolvePedidoSku(rawCode);
-      const key = resolvedSku || rawCode;
-
-      if(resolvedSku && resolvedSku !== rawCode){
-        mappedEntries.push(`${rawCode} → ${resolvedSku}`);
-      }
-      if(!resolvedSku){
-        unknownCodes.push(rawCode);
-      }
-
-      np[key] = (np[key]||0) + pend;
-    }
-
-    pendingOrders=np;
-    guardarEstado();
-
-    const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
-    const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
-
-    let extraMsg='';
-    if(mappedEntries.length){
-      extraMsg += `<br><span style="color:var(--blue);font-size:12px">Se resolvieron ${mappedEntries.length} códigos desde descripción a SKU: ${mappedEntries.slice(0,5).join(', ')}${mappedEntries.length>5?'...':''}</span>`;
-    }
-    if(unknownCodes.length){
-      const uniqueUnknown=[...new Set(unknownCodes)];
-      extraMsg += `<br><span style="color:var(--muted);font-size:12px">No se pudo resolver ${uniqueUnknown.length} códigos: ${uniqueUnknown.slice(0,5).join(', ')}${uniqueUnknown.length>5?'...':''}</span>`;
-    }
-
-    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo (otros productos): ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}${extraMsg}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
-
-    toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
-  };
-  r.readAsText(file,'latin1');
-}
+// processCSV definida abajo (versión unificada con clientesData y resolvePedidoSku)
 
 let clientesData = []; // raw rows with client info
 let distribucionSkus = []; // SKUs manually marked as distribución
@@ -2903,13 +2852,28 @@ function processCSV(file){
 
     const np={}; let cnt=0;
     const rawRows=[];
+    const mappedEntries=[];
+    const unknownCodes=[];
 
     for(let i=1;i<lines.length;i++){
       if(!lines[i].trim())continue;
       const cols=lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
-      const sku  = cols[ci]?.trim();
+      const rawCode = cols[ci]?.trim();
       const pend = parseFloat(cols[pi])||0;
-      if(!sku) continue;
+      if(!rawCode) continue;
+
+      // FIX: usar resolvePedidoSku para mapear correctamente códigos a SKUs del catálogo
+      const resolvedSku = resolvePedidoSku(rawCode);
+      const sku = resolvedSku || rawCode;
+
+      if(resolvedSku && resolvedSku !== rawCode){
+        mappedEntries.push(`${rawCode} → ${resolvedSku}`);
+      }
+      if(!resolvedSku){
+        unknownCodes.push(rawCode);
+      }
+
+      // FIX: acumular SUMA de pendientes por SKU (no pisar el valor anterior)
       np[sku]=(np[sku]||0)+pend;
       cnt++;
       if(pend>0) rawRows.push({
@@ -2932,7 +2896,17 @@ function processCSV(file){
     const allProds=getAllProducts();
     const matched=Object.keys(np).filter(s=>allProds.some(p=>p.SKU===s));
     const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
-    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo: ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN →</button>`;
+
+    let extraMsg='';
+    if(mappedEntries.length){
+      extraMsg += `<br><span style="color:var(--blue);font-size:12px">Se resolvieron ${mappedEntries.length} códigos a SKU: ${mappedEntries.slice(0,5).join(', ')}${mappedEntries.length>5?'...':''}</span>`;
+    }
+    if(unknownCodes.length){
+      const uniqueUnknown=[...new Set(unknownCodes)];
+      extraMsg += `<br><span style="color:var(--muted);font-size:12px">Sin empatar: ${uniqueUnknown.slice(0,5).join(', ')}${uniqueUnknown.length>5?'...':''}</span>`;
+    }
+
+    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo: ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}${extraMsg}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
     toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
 
     // Populate vendedor filter
