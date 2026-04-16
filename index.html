@@ -3283,11 +3283,16 @@ async function renderHistChart(sku) {
     `<div style="text-align:center;color:var(--muted);padding:60px;font-size:12px">⏳ Cargando historial...</div>`;
 
   try {
-    // Load inventory history
-    const invSnap = await db.ref('kalos/historial/inventario').once('value');
-    const pedSnap = await db.ref('kalos/historial/pedidos').once('value');
-    const invData = invSnap.val() || {};
-    const pedData = pedSnap.val() || {};
+    // Load inventory history (con caché para no releer Firebase en cada producto)
+    if (!window._histCache || (Date.now() - window._histCache.ts > 60000)) {
+      const [invSnap, pedSnap] = await Promise.all([
+        db.ref('kalos/historial/inventario').once('value'),
+        db.ref('kalos/historial/pedidos').once('value')
+      ]);
+      window._histCache = { inv: invSnap.val() || {}, ped: pedSnap.val() || {}, ts: Date.now() };
+    }
+    const invData = window._histCache.inv;
+    const pedData = window._histCache.ped;
 
     // Build date range (last N days)
     const today = new Date();
@@ -3390,11 +3395,11 @@ async function renderHistChart(sku) {
       extendedDates.push(d.toISOString().slice(0, 10));
     }
     
-    // Extender series con proyecciones
-    const pedSeriesExtended = [...pedSeries, ...prediction.nextWeek];
-    const invSeriesExtended = [...invSeries, ...Array(7).fill(null)]; // Inventario no proyecta, solo null
-    const minSeriesExtended = [...invSeries.map(() => null), ...prediction.minProjection];
-    const maxSeriesExtended = [...invSeries.map(() => null), ...prediction.maxProjection];
+    // Extender series con proyecciones (guardia si prediction es null)
+    const pedSeriesExtended = prediction ? [...pedSeries, ...prediction.nextWeek] : [...pedSeries];
+    const invSeriesExtended = [...invSeries, ...Array(prediction ? 7 : 0).fill(null)];
+    const minSeriesExtended = prediction ? [...invSeries.map(() => null), ...prediction.minProjection] : [];
+    const maxSeriesExtended = prediction ? [...invSeries.map(() => null), ...prediction.maxProjection] : [];
     
     // Recalcular escala con datos extendidos
     const allValsExtended = [...pedSeriesExtended, ...invSeriesExtended, ...minSeriesExtended, ...maxSeriesExtended].filter(v => v !== null);
