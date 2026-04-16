@@ -2944,8 +2944,78 @@ function processCSV(file){
     const unmatched=Object.keys(np).filter(s=>!allProds.some(p=>p.SKU===s));
     let extraMsg='';
     if(mappedEntries.length) extraMsg+=`<br><span style="color:var(--blue);font-size:12px">Resueltos ${mappedEntries.length} códigos a SKU</span>`;
-    if(unknownCodes.length){const u=[...new Set(unknownCodes)];extraMsg+=`<br><span style="color:var(--muted);font-size:12px">Sin empatar: ${u.slice(0,5).join(', ')}${u.length>5?'...':''}</span>`;}
-    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${unmatched.length?`<br><span style="color:var(--muted);font-size:12px">Fuera de catálogo: ${unmatched.slice(0,6).join(', ')}${unmatched.length>6?'...':''}</span>`:''}${extraMsg}</div><button class="btn btn-primary" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
+
+    // Build expandable unmatched list (SKU + desc from CSV)
+    let unmatchedSection='';
+    if(unmatched.length){
+      const u=[...new Set(unmatched)];
+      // Get description from rawRows for each unmatched SKU
+      const unmatchedRows=u.map(sku=>{
+        const row=rawRows.find(r=>r.sku===sku)||unknownCodes.includes(sku)?{sku,desc:rawRows.find(r=>r.sku===sku)?.desc||sku}:{sku,desc:sku};
+        const desc=rawRows.find(r=>r.sku===sku)?.desc||sku;
+        const pend=np[sku]||0;
+        return {sku,desc,pend};
+      });
+      unmatchedSection=`
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.sku-chevron').style.transform=this.nextElementSibling.style.display==='block'?'rotate(90deg)':'rotate(0deg)'"
+            style="cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--red);user-select:none;padding:4px 0;">
+            <span class="sku-chevron" style="display:inline-block;transition:transform .2s;font-size:10px;">▶</span>
+            ❌ ${u.length} SKUs SIN EMPATAR (no están en tu catálogo)
+          </div>
+          <div style="display:none;margin-top:8px;max-height:240px;overflow-y:auto;border:1px solid rgba(255,68,68,.2);border-radius:6px;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+              <thead><tr style="background:rgba(255,68,68,.08);">
+                <th style="padding:6px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--red);border-bottom:1px solid rgba(255,68,68,.15);">SKU CSV</th>
+                <th style="padding:6px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--red);border-bottom:1px solid rgba(255,68,68,.15);">DESCRIPCIÓN CSV</th>
+                <th style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--red);border-bottom:1px solid rgba(255,68,68,.15);">PENDIENTE</th>
+              </tr></thead>
+              <tbody>${unmatchedRows.map((r,i)=>`
+                <tr style="border-bottom:1px solid rgba(42,48,69,.4);background:${i%2===0?'transparent':'rgba(255,68,68,.03)'}">
+                  <td style="padding:5px 10px;font-family:var(--mono);color:var(--red);">${r.sku}</td>
+                  <td style="padding:5px 10px;color:var(--muted);">${r.desc!==r.sku?r.desc:'—'}</td>
+                  <td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:var(--text);">${r.pend.toLocaleString()}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    // Build expandable matched list (SKU + name from catalog)
+    let matchedSection='';
+    if(matched.length){
+      const matchedRows=matched.map(sku=>{
+        const prod=allProds.find(p=>p.SKU===sku);
+        return {sku, name:prod?.Nombre||prod?.nombre||prod?.NOMBRE||sku, pend:np[sku]||0};
+      }).sort((a,b)=>b.pend-a.pend);
+      matchedSection=`
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.sku-chevron2').style.transform=this.nextElementSibling.style.display==='block'?'rotate(90deg)':'rotate(0deg)'"
+            style="cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--green);user-select:none;padding:4px 0;">
+            <span class="sku-chevron2" style="display:inline-block;transition:transform .2s;font-size:10px;">▶</span>
+            ✅ ${matched.length} SKUs EMPATADOS con el catálogo
+          </div>
+          <div style="display:none;margin-top:8px;max-height:240px;overflow-y:auto;border:1px solid rgba(0,214,143,.2);border-radius:6px;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+              <thead><tr style="background:rgba(0,214,143,.06);">
+                <th style="padding:6px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--green);border-bottom:1px solid rgba(0,214,143,.15);">SKU</th>
+                <th style="padding:6px 10px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--green);border-bottom:1px solid rgba(0,214,143,.15);">NOMBRE EN CATÁLOGO</th>
+                <th style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--green);border-bottom:1px solid rgba(0,214,143,.15);">PENDIENTE</th>
+              </tr></thead>
+              <tbody>${matchedRows.map((r,i)=>`
+                <tr style="border-bottom:1px solid rgba(42,48,69,.4);background:${i%2===0?'transparent':'rgba(0,214,143,.02)'}">
+                  <td style="padding:5px 10px;font-family:var(--mono);color:var(--green);">${r.sku}</td>
+                  <td style="padding:5px 10px;color:var(--text);">${r.name}</td>
+                  <td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:var(--text);">${r.pend.toLocaleString()}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('pedidosResult').innerHTML=`<div class="pedidos-summary"><strong>✓ CSV cargado:</strong> ${cnt} líneas procesadas<br><strong style="color:var(--green)">${matched.length} de ${allProds.length} SKUs</strong> empatados con el catálogo${extraMsg}${unmatchedSection}${matchedSection}</div><button class="btn btn-primary" style="margin-top:12px;" onclick="goToPlan()">📊 VER PLAN ACTUALIZADO →</button>`;
     toast('✓ '+matched.length+'/'+allProds.length+' SKUs empatados','success');
 
     // Populate vendedor filter
